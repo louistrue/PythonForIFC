@@ -1,0 +1,56 @@
+# IfcPropertyRenamer User Guide
+
+## Introduction
+
+IFC Property Renamer is a specialized tool designed to streamline the process of renaming Property Sets (Psets) and Properties in an IFC file. With a user-friendly interface, the application offers multiple functionalities like bulk renaming, direct text editing, and more.
+
+![Main UI](path/to/main_ui_screenshot.png)
+
+## Features
+
+### Load IFC File
+
+Load an existing IFC file into the application for editing.
+
+![Load IFC](path/to/load_ifc_screenshot.png)
+
+### Save Changes
+
+Save any changes made back to the IFC file.
+
+![Save Changes](path/to/save_changes_screenshot.png)
+
+### Direct Edit Mode
+
+Toggle the 'Direct Edit Mode' checkbox to enable or disable direct editing of property names in the list.
+
+![Direct Edit Mode](path/to/direct_edit_mode_screenshot.png)
+
+### Search and Replace
+
+Use the search and replace fields to perform bulk renaming of property sets and properties.
+
+![Search and Replace](path/to/search_and_replace_screenshot.png)
+
+### Apply Changes
+
+Click the 'Apply Changes' button to apply any renaming changes made.
+
+![Apply Changes](path/to/apply_changes_screenshot.png)
+
+## How to Use
+
+1. **Load an IFC File**: Click the 'Load IFC File' button and browse to the IFC file you wish to edit.
+2. **Select Items**: Use the lists to select the property sets and properties you want to rename.
+3. **Choose Edit Mode**: Toggle 'Direct Edit Mode' for direct editing or use the search and replace fields for bulk renaming.
+4. **Apply Changes**: Click 'Apply Changes' to perform the renaming.
+5. **Save File**: Save the changes back to the IFC file by clicking 'Save Changes'.
+
+## Troubleshooting
+
+- **Issue 1**: Description and solution.
+- **Issue 2**: Description and solution.
+
+## Contact
+
+For any issues or queries, please contact [Support]
