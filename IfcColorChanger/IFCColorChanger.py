@@ -2,72 +2,160 @@ import ifcopenshell
 from ifcopenshell import api
 import json
 import sys
-from PyQt5 import QtWidgets, QtGui, QtCore 
-from PyQt5.QtWidgets import QWidget
-from PyQt5.QtWidgets import QVBoxLayout, QSplitter
+from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5.QtWidgets import QVBoxLayout, QSplitter, QWidget, QMenuBar, QCheckBox, QPushButton, QTableWidget, QTableWidgetItem, QColorDialog, QFileDialog
 from PyQt5.QtGui import QPainter, QPolygon, QColor, QFont, QFontMetrics
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import Qt, QPoint, QRect
+from PyQt5 import QtWidgets, QtCore
 import math
+
 
 class ColorWheelWidget(QWidget):
     def __init__(self, material_data, parent=None):
         super().__init__(parent)
-        self.material_data = material_data  # List of tuples (material_name, color, entity_count)
+        self.material_data = sorted(
+            [(m, c, e) for m, c, e in material_data if e > 0], 
+            key=lambda x: x[2], reverse=True
+        )
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        rect = event.rect()
+        # Calculate the size based on the widget's dimensions to maintain a 1:1 aspect ratio
+        size = min(self.width(), self.height())
+        rect = QRect((self.width() - size) / 2, (self.height() - size) / 2, size, size)
         center = rect.center()
-        radius = min(rect.width(), rect.height()) / 2
-        num_materials = len(self.material_data)
+        radius = size / 2
 
-        for i, (material, color, count) in enumerate(self.material_data):
-            angle_start = 360 / num_materials * i
-            angle_end = 360 / num_materials * (i + 1)
+        total_entities = sum(count for _, _, count in self.material_data)
 
-            # Draw segment
+        angle_start = 0
+        for material, color, count in self.material_data:
+            proportion = count / total_entities
+            angle_span = 360 * proportion  # Span of segment proportional to count
+
+            # Draw segment with rounded edges
             painter.setBrush(QColor(*color))
             painter.setPen(Qt.NoPen)
-            polygon = QPolygon([self._calculate_point(angle_start, radius, center),
-                                self._calculate_point(angle_end, radius, center),
-                                center])
-            painter.drawPolygon(polygon)
+            painter.drawPie(rect, int(angle_start * 16), int(angle_span * 16))
 
-            # Label segment
-            text = f"{material}\n#: {count}"  
-            painter.setPen(QColor(0, 0, 0))
-            font = QFont("Arial", 10)
-            painter.setFont(font)
-            fm = QFontMetrics(font)
-            text_width = fm.horizontalAdvance(text)
-            text_height = fm.height()
-            angle_text = (angle_start + angle_end) / 2
-            text_pos = self._calculate_point(angle_text, radius / 2, center)
-            painter.drawText(text_pos.x() - text_width // 2, text_pos.y() + text_height // 4, text)
+            # Label the segment
+            self._draw_label(painter, material, count, angle_start, angle_span, radius, center)
+
+            angle_start += angle_span
 
 
-    def _calculate_point(self, angle, radius, center):
+    def _draw_label(self, painter, material, count, angle_start, angle_span, radius, center):
+        # Function to draw labels on segments
+        font = QFont("Arial", 6)
+        painter.setFont(font)
+        fm = QFontMetrics(font)
+
+        # Calculate the positionfor the material label
+        angle_text = angle_start + angle_span / 2
+        text = f"{material}"
+        self._draw_text(painter, text, angle_text, radius / 2, center, fm)
+        # Calculate the position for the count label
+        text = f"Stk: {count}"
+        self._draw_text(painter, text, angle_text, radius / 1.1, center, fm)
+
+    def _draw_text(self, painter, text, angle, radius, center, fm):
+        # Function to draw text at a given angle and radius
         radian = math.radians(angle)
-        x = int(center.x() + radius * math.cos(radian))
-        y = int(center.y() + radius * math.sin(radian))
-        return QPoint(x, y)
+        text_width = fm.horizontalAdvance(text)
+        text_height = fm.height()
+        x = int(center.x() + radius * math.cos(radian) - text_width // 2)
+        y = int(center.y() + radius * math.sin(radian) + text_height // 4)
+        painter.drawText(x, y, text)
+
+
+class DocumentationDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle("Documentation")
+        self.resize(600, 400)  # Adjust the size as needed
+
+        layout = QtWidgets.QVBoxLayout(self)
+
+        # Create a QTextBrowser to display the documentation
+        self.textBrowser = QtWidgets.QTextBrowser(self)
+        doc_html = """
+        <h1>IFC Color Changer Documentation</h1>
+
+        <p>The IFC Color Changer is a tool designed to modify the color properties of materials in IFC files. It allows users to load IFC files, change material colors, save changes, and export color mappings.</p>
+
+        <h2>Getting Started</h2>
+        <ol>
+            <li><b>Loading an IFC File</b>:
+                <ul>
+                    <li>Click on 'Load IFC File' to open and load your IFC file into the application.</li>
+                </ul>
+            </li>
+            <li><b>Viewing Material Colors</b>:
+                <ul>
+                    <li>The Color Wheel Widget displays the current color settings for each material.</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h2>Changing Colors</h2>
+        <ul>
+            <li><b>Select a Material</b>: Click on a material in the table to select it.</li>
+            <li><b>Change Color</b>:
+                <ul>
+                    <li>Click 'Choose Color' to open the color picker.</li>
+                    <li>Select a color and confirm your choice.</li>
+                </ul>
+            </li>
+            <li><b>Applying Changes</b>:
+                <ul>
+                    <li>Once you've chosen new colors, click 'Save Changes as new IFC' to apply the changes to the IFC file.</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h2>Exporting Color Mappings</h2>
+        <ul>
+            <li>To export your color settings, go to 'More' &gt; 'Export Color Mapping'.</li>
+            <li>Choose a location to save the JSON file containing your color mappings.</li>
+        </ul>
+
+        <h2>Troubleshooting and Support</h2>
+        <p>If you encounter any issues or have questions, please contact our support team at support@example.com.</p>
+
+        <h2>About</h2>
+        <ul>
+            <li>IFC Color Changer version 1.0</li>
+            <li>Developed by Louis Trümpler</li>
+        </ul>
+
+        """
+        self.textBrowser.setHtml(doc_html)
+        layout.addWidget(self.textBrowser)
+
+        # Close button
+        closeButton = QtWidgets.QPushButton("Close", self)
+        closeButton.clicked.connect(self.close)
+        layout.addWidget(closeButton)
+        
+
 
 
 class IFCColorChanger(QtWidgets.QWidget):
-    """
-    A tool to change the color of materials in an IFC file based on a mapping provided in a JSON file.
-    """
     def __init__(self):
-        """
-        Initialize the IFCColorChanger widget.
-        """
         super().__init__()
         self.ifc_file = None
         self.material_color_map = {}
         self.initUI()
-        self.load_color_map_from_json('IfcScripts\IfcColorChanger\MaterialColorMapping.json')
+        self.load_color_map_from_json('IfcScripts/IfcColorChanger/2396MaterialColorMapping.json')
+        self.user_selected_colors = {}
+        self.resize(950, 600)
+        self.setWindowTitle('IFC Color Changer')
+        self.show()
 
     def load_color_map_from_json(self, json_file_path):
         """
@@ -88,9 +176,22 @@ class IFCColorChanger(QtWidgets.QWidget):
         return [int(255 * (1 - value)), 0, int(255 * value)]
 
     def initUI(self):
-        """
-        Initialize the User Interface.
-        """
+        self.menuBar = QMenuBar(self)  
+        # Add a 'More' menu
+        moreMenu = self.menuBar.addMenu('&More')
+        exportAction = QtWidgets.QAction('&Export Color Mapping', self)
+        exportAction.triggered.connect(self.export_color_mapping)
+        moreMenu.addAction(exportAction)
+
+        # Add a 'Help' menu
+        helpMenu = self.menuBar.addMenu('&Help')
+
+        # Add 'View Documentation' action
+        viewDocsAction = QtWidgets.QAction('&View Documentation', self)
+        viewDocsAction.triggered.connect(self.view_documentation)
+        helpMenu.addAction(viewDocsAction)
+
+
         mainLayout = QVBoxLayout()
         splitter = QSplitter()  # Create a splitter for resizable layout
 
@@ -120,7 +221,32 @@ class IFCColorChanger(QtWidgets.QWidget):
         self.setLayout(mainLayout)
         self.setWindowTitle('IFC Color Changer')
         self.show()
- 
+
+    def view_documentation(self):
+        dialog = DocumentationDialog(self)
+        dialog.exec_()
+
+
+    def export_color_mapping(self):
+        # Combine both predefined and user-defined color mappings
+        combined_color_map = {**self.material_color_map, **self.user_selected_colors}
+
+        # Transform the color mapping into the required JSON structure
+        json_data = [{"Material": material, "Color": color} for material, color in combined_color_map.items()]
+
+        # Ask the user where to save the JSON file
+        options = QtWidgets.QFileDialog.Options()
+        fileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save Color Mapping", "", "JSON Files (*.json)", options=options)
+
+        if fileName:
+            try:
+                with open(fileName, 'w') as file:
+                    json.dump(json_data, file, indent=4)
+                QtWidgets.QMessageBox.information(self, 'Success', 'Color mapping exported successfully.')
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, 'Error', f'Failed to export color mapping: {e}')
+
+
 
     def load_ifc_file(self):
         """
@@ -170,22 +296,14 @@ class IFCColorChanger(QtWidgets.QWidget):
         return material_counts  
 
 
-
     def populate_material_table(self):
-        """
-        Populate the table with materials and color swatches, highlighting missing mappings.
-        """
         self.tableWidget.setRowCount(0)
-        self.tableWidget.setColumnCount(3)  # Three columns: Color Swatch/Apply, Material, New Color
+        self.tableWidget.setColumnCount(3)
         self.tableWidget.setHorizontalHeaderLabels(['', 'Material', 'New Color'])
-        header = self.tableWidget.horizontalHeader()
-        header.setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)  # Material name column
-        header.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)  # New Color column
 
         if not self.ifc_file:
             return
-
-        # Populate table rows
+        
         for material in self.ifc_file.by_type('IfcMaterial'):
             row_position = self.tableWidget.rowCount()
             self.tableWidget.insertRow(row_position)
@@ -197,61 +315,46 @@ class IFCColorChanger(QtWidgets.QWidget):
             # Material name
             self.tableWidget.setItem(row_position, 1, QtWidgets.QTableWidgetItem(material.Name))
 
-            # Retrieve and display the RGB color
-            color = self.material_color_map.get(material.Name, [255, 255, 255])  # Default to white if not found
-            rgb_string = f"RGB({color[0]}, {color[1]}, {color[2]})"
+            # Check if material is in JSON mapping
+            if material.Name in self.material_color_map:
+                # Material is in JSON mapping
+                color_checkbox.setChecked(True)
+                color = self.material_color_map[material.Name]
+                rgb_string = f"RGB({color[0]}, {color[1]}, {color[2]})"
+                color_item = QtWidgets.QTableWidgetItem(rgb_string)
+                color_item.setBackground(QtGui.QColor(*color))
+                self.tableWidget.setItem(row_position, 2, color_item)
+            else:
+                # Material not in JSON mapping, provide a button for color picker
+                color_btn = QtWidgets.QPushButton('Choose Color')
+                color_btn.clicked.connect(lambda _, row=row_position: self.open_color_picker(row))
+                self.tableWidget.setCellWidget(row_position, 2, color_btn)
+
+
+        # Resize each column to fit its contents
+        for column in range(self.tableWidget.columnCount()):
+            self.tableWidget.resizeColumnToContents(column)
+
+        # Optionally, set a minimum width for the table
+        total_width = sum([self.tableWidget.columnWidth(column) for column in range(self.tableWidget.columnCount())])
+        self.tableWidget.setMinimumWidth(total_width + 60) 
+
+    def open_color_picker(self, row):
+        color_dialog = QtWidgets.QColorDialog(self)
+        if color_dialog.exec_():
+            chosen_color = color_dialog.currentColor()
+            rgb_values = (chosen_color.red(), chosen_color.green(), chosen_color.blue())
+            rgb_string = f"RGB({rgb_values[0]}, {rgb_values[1]}, {rgb_values[2]})"
+
+            # Store the RGB values in the user-selected colors dictionary
+            material_name = self.tableWidget.item(row, 1).text()
+            self.user_selected_colors[material_name] = rgb_values
+
             color_item = QtWidgets.QTableWidgetItem(rgb_string)
-            color_item.setBackground(QtGui.QColor(*color))
-            self.tableWidget.setItem(row_position, 2, color_item)  # Corrected column index for color
-
-        # Set properties for better readability and appearance
-        self.tableWidget.verticalHeader().setVisible(False)
-        self.tableWidget.setShowGrid(False)
-        self.tableWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        self.tableWidget.setAlternatingRowColors(True)
-        self.tableWidget.setStyleSheet("QTableWidget {alternate-background-color: #f0f0f0;}")
-        self.tableWidget.setSortingEnabled(True)
-        self.tableWidget.sortByColumn(1, QtCore.Qt.AscendingOrder)  # Sort by Material Name
-        self.tableWidget.resizeColumnsToContents()
-        self.tableWidget.resizeRowsToContents()
-                
-    
-
-        # Adjust the column widths
-        self.tableWidget.setColumnWidth(0, 150)  # Material name column
-        self.tableWidget.setColumnWidth(1, 150)  # Color value column
-        self.tableWidget.setColumnWidth(2, 50)   # Color swatch/apply column
+            color_item.setBackground(chosen_color)
+            self.tableWidget.setItem(row, 2, color_item)
 
 
-        # Optionally, adjust row heights for better appearance
-        for row in range(self.tableWidget.rowCount()):
-            self.tableWidget.setRowHeight(row, 30)  # Set a fixed height for each row
-
-        # Update UI layout for a polished look
-        self.tableWidget.horizontalHeader().setStretchLastSection(True)
-        self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-
-        # Improve the look and feelof the table
-        self.tableWidget.verticalHeader().setVisible(False) # Hide vertical headers
-        self.tableWidget.setShowGrid(False) # Hide grid lines for a cleaner look
-        self.tableWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows) # Enable row selection
-        self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers) # Disable editing
-
-        # Set row and column properties for better readability
-        self.tableWidget.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft)
-        self.tableWidget.setAlternatingRowColors(True)
-
-        # Styling for alternating row colors for better readability
-        self.tableWidget.setStyleSheet("QTableWidget {alternate-background-color: #f0f0f0;}")
-
-        # Final adjustments for a clean and user-friendly interface
-        self.tableWidget.setSortingEnabled(True)  # Enable sorting by column headers
-        self.tableWidget.sortByColumn(0, QtCore.Qt.AscendingOrder)  # Sort by the first column (Material Name)
-
-        # Resizing the table to fit the contents
-        self.tableWidget.resizeColumnsToContents()
-        self.tableWidget.resizeRowsToContents()
 
 
     def get_representation_and_value(self, material_name):
@@ -284,16 +387,20 @@ class IFCColorChanger(QtWidgets.QWidget):
             return 1.0  # A default float value, e.g., 1.0
 
     def assign_color_to_element(self, ifc_file, representation, value):
-        # Check if the value is a list (RGB values) or a float
-        if isinstance(value, list) and len(value) == 3:
-            # Directly use the RGB values as color
-            color = [v / 255.0 for v in value]  # Normalize the RGB values
+        # Check if the value is a list (RGB values)
+        if isinstance(value, tuple) or isinstance(value, list):
+            # Normalize the RGB values if they are in standard 0-255 range
+            if all(isinstance(v, int) and 0 <= v <= 255 for v in value):
+                color = [v / 255.0 for v in value]
+            else:
+                # Handle the case where the RGB values are already normalized or incorrect
+                color = value
         elif isinstance(value, float):
             # Use get_color to convert the float value to RGB
             color = IFCColorChanger.get_color(value)
         else:
             print(f"Invalid value for color: {value}")
-            return  # Optionally handle this situation more gracefully
+            return  
 
         # Create a blank style
         style = ifcopenshell.api.run("style.add_style", ifc_file, name="DynamicStyle")
@@ -309,29 +416,44 @@ class IFCColorChanger(QtWidgets.QWidget):
         # Assign the style to the element's representation
         ifcopenshell.api.run("style.assign_representation_styles", ifc_file, shape_representation=representation, styles=[style])
 
-
     def apply_save_changes(self):
         if not self.ifc_file:
             return
 
         try:
             for row in range(self.tableWidget.rowCount()):
-                color_checkbox = self.tableWidget.cellWidget(row, 2)
+                color_checkbox = self.tableWidget.cellWidget(row, 0)
                 if isinstance(color_checkbox, QtWidgets.QCheckBox) and color_checkbox.isChecked():
-                    material_name = self.tableWidget.item(row, 0).text()
-                    representations, value = self.get_representation_and_value(material_name)
+                    material_name = self.tableWidget.item(row, 1).text()
+
+                    # Check if the color is user-selected or from JSON mapping
+                    if material_name in self.user_selected_colors:
+                        # User-selected color
+                        rgb_values = self.user_selected_colors[material_name]
+                    elif material_name in self.material_color_map:
+                        # Color from JSON mapping
+                        rgb_values = self.material_color_map[material_name]
+                    else:
+                        # Skip if no color is selected
+                        continue
+
+                    # Get representations for the material
+                    representations, _ = self.get_representation_and_value(material_name)
                     for representation in representations:
-                        if representation is not None and value is not None:
-                            self.assign_color_to_element(self.ifc_file, representation, value)
+                        if representation is not None:
+                            # Apply the color to the element
+                            self.assign_color_to_element(self.ifc_file, representation, rgb_values)
 
 
+            # Save the modified IFC file
             file_dialog = QtWidgets.QFileDialog()
             new_ifc_file_path, _ = file_dialog.getSaveFileName(self, 'Save IFC File', '', 'IFC Files (*.ifc)')
             if new_ifc_file_path:
                 self.ifc_file.write(new_ifc_file_path)
                 QtWidgets.QMessageBox.information(self, 'Success', 'IFC file saved with new colors.')
-        except Exception as e:
+        except Exception as e: 
             QtWidgets.QMessageBox.critical(self, 'Error', f'Error applying changes: {e}')
+
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
