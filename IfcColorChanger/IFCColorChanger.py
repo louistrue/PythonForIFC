@@ -22,52 +22,74 @@ class ColorWheelWidget(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        # Calculate the size based on the widget's dimensions to maintain a 1:1 aspect ratio
-        size = min(self.width(), self.height())
-        rect = QRect((self.width() - size) / 2, (self.height() - size) / 2, size, size)
+        # Adjust size for external labels
+        size = min(self.width(), self.height()) - 150  # Reserve space for labels
+        rect = QRect(int((self.width() - size) / 2), int((self.height() - size) / 2), size, size)
         center = rect.center()
         radius = size / 2
 
         total_entities = sum(count for _, _, count in self.material_data)
-
         angle_start = 0
         for material, color, count in self.material_data:
             proportion = count / total_entities
-            angle_span = 360 * proportion  # Span of segment proportional to count
+            angle_span = 360 * proportion
 
-            # Draw segment with rounded edges
+            # Draw segment
             painter.setBrush(QColor(*color))
             painter.setPen(Qt.NoPen)
             painter.drawPie(rect, int(angle_start * 16), int(angle_span * 16))
 
-            # Label the segment
-            self._draw_label(painter, material, count, angle_start, angle_span, radius, center)
+            # Label and line
+            self._draw_label_and_line(painter, material, count, angle_start, angle_span, radius, center)
 
             angle_start += angle_span
 
+    def _draw_label_and_line(self, painter, material, count, angle_start, angle_span, radius, center):
+        if count == 0:
+            return  # Skip labels for 0 count
 
-    def _draw_label(self, painter, material, count, angle_start, angle_span, radius, center):
-        # Function to draw labels on segments
-        font = QFont("Arial", 6)
+        font = QFont("Arial", 8)
         painter.setFont(font)
         fm = QFontMetrics(font)
 
-        # Calculate the positionfor the material label
+        # Calculate angle for text and line
         angle_text = angle_start + angle_span / 2
-        text = f"{material}"
-        self._draw_text(painter, text, angle_text, radius / 2, center, fm)
-        # Calculate the position for the count label
-        text = f"Stk: {count}"
-        self._draw_text(painter, text, angle_text, radius / 1.1, center, fm)
+        radian = math.radians(angle_text)
 
-    def _draw_text(self, painter, text, angle, radius, center, fm):
-        # Function to draw text at a given angle and radius
-        radian = math.radians(angle)
+        # Calculate label position
+        external_radius = radius + 35  # Increased for label space
+        x = center.x() + external_radius * math.cos(radian)
+        y = center.y() + external_radius * math.sin(radian)
+
+        # Text for label
+        text = f"{material} (Stk: {count})"
         text_width = fm.horizontalAdvance(text)
         text_height = fm.height()
-        x = int(center.x() + radius * math.cos(radian) - text_width // 2)
-        y = int(center.y() + radius * math.sin(radian) + text_height // 4)
-        painter.drawText(x, y, text)
+
+        # Adjust label position based on quadrant
+        if 0 <= angle_text < 90:
+            text_x = x
+            text_y = y
+        elif 90 <= angle_text < 180:
+            text_x = x - text_width
+            text_y = y
+        elif 180 <= angle_text < 270:
+            text_x = x - text_width
+            text_y = y - text_height
+        else:
+            text_x = x
+            text_y = y - text_height
+
+        # Draw line from segment to label
+        painter.setPen(Qt.black)
+        painter.drawLine(
+            int(center.x() + radius * math.cos(radian)),
+            int(center.y() + radius * math.sin(radian)),
+            int(x), int(y)
+        )
+
+        # Draw label
+        painter.drawText(int(text_x), int(text_y), text)
 
 
 class DocumentationDialog(QtWidgets.QDialog):
@@ -182,42 +204,33 @@ class IFCColorChanger(QtWidgets.QWidget):
         exportAction = QtWidgets.QAction('&Export Color Mapping', self)
         exportAction.triggered.connect(self.export_color_mapping)
         moreMenu.addAction(exportAction)
-
         # Add a 'Help' menu
         helpMenu = self.menuBar.addMenu('&Help')
-
         # Add 'View Documentation' action
         viewDocsAction = QtWidgets.QAction('&View Documentation', self)
         viewDocsAction.triggered.connect(self.view_documentation)
         helpMenu.addAction(viewDocsAction)
-
-
         mainLayout = QVBoxLayout()
+        # Set top margin for the main layout
+        mainLayout.setContentsMargins(0, 30, 0, 0)  # Adjust the second parameter to increase/decrease top margin
         splitter = QSplitter()  # Create a splitter for resizable layout
-
         self.loadIFCButton = QtWidgets.QPushButton('Load IFC File')
         self.loadIFCButton.clicked.connect(self.load_ifc_file)
-
         self.tableWidget = QtWidgets.QTableWidget()
         self.tableWidget.setFixedWidth(400)
-
         self.saveButton = QtWidgets.QPushButton('Save Changes as new IFC')
         self.saveButton.clicked.connect(self.apply_save_changes)
         self.saveButton.setDisabled(True)
-
         # Color wheel widget
         self.colorWheelWidget = ColorWheelWidget([])
         self.colorWheelWidget.setMinimumHeight(300)  # Ensure visible height
-
         # Adding table and color wheel to the splitter
         splitter.addWidget(self.tableWidget)
         splitter.addWidget(self.colorWheelWidget)
-
         # Adding widgets and splitter to the main layout
         mainLayout.addWidget(self.loadIFCButton)
         mainLayout.addWidget(splitter)  # Add splitter to main layout
         mainLayout.addWidget(self.saveButton)
-
         self.setLayout(mainLayout)
         self.setWindowTitle('IFC Color Changer')
         self.show()
@@ -271,9 +284,13 @@ class IFCColorChanger(QtWidgets.QWidget):
         for material_name, color in self.material_color_map.items():
             count = material_counts.get(material_name, 0)
             material_data.append((material_name, color, count))
-        
-        self.colorWheelWidget.material_data = material_data
+
+        # Sort material data by count in descending order
+        sorted_material_data = sorted(material_data, key=lambda x: x[2], reverse=True)
+
+        self.colorWheelWidget.material_data = sorted_material_data
         self.colorWheelWidget.update()
+
 
     def aggregate_material_counts(self):
         material_counts = {}
