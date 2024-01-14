@@ -3,7 +3,7 @@ from ifcopenshell import api
 import json
 import sys
 from PyQt5 import QtWidgets, QtGui, QtCore
-from PyQt5.QtWidgets import QVBoxLayout, QSplitter, QWidget, QMenuBar, QCheckBox, QPushButton, QTableWidget, QTableWidgetItem, QColorDialog, QFileDialog
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QSplitter, QWidget, QMenuBar, QCheckBox, QPushButton, QTableWidget, QTableWidgetItem, QColorDialog, QFileDialog
 from PyQt5.QtGui import QPainter, QPolygon, QColor, QFont, QFontMetrics
 from PyQt5.QtCore import Qt, QPoint, QRect
 from PyQt5 import QtWidgets, QtCore
@@ -17,6 +17,7 @@ class ColorWheelWidget(QWidget):
             [(m, c, e) for m, c, e in material_data if e > 0], 
             key=lambda x: x[2], reverse=True
         )
+        
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -30,66 +31,17 @@ class ColorWheelWidget(QWidget):
 
         total_entities = sum(count for _, _, count in self.material_data)
         angle_start = 0
-        for material, color, count in self.material_data:
-            proportion = count / total_entities
-            angle_span = 360 * proportion
+        for index, (material, color, count) in enumerate(self.material_data):
+            if count > 0:
+                proportion = count / total_entities
+                angle_span = 360 * proportion
+                # Draw segment
+                painter.setBrush(QColor(*color))
+                painter.setPen(Qt.black)  # Set pen to black color
+                painter.drawPie(rect, int(angle_start * 16), int(angle_span * 16))
+                angle_start += angle_span
 
-            # Draw segment
-            painter.setBrush(QColor(*color))
-            painter.setPen(Qt.NoPen)
-            painter.drawPie(rect, int(angle_start * 16), int(angle_span * 16))
 
-            # Label and line
-            self._draw_label_and_line(painter, material, count, angle_start, angle_span, radius, center)
-
-            angle_start += angle_span
-
-    def _draw_label_and_line(self, painter, material, count, angle_start, angle_span, radius, center):
-        if count == 0:
-            return  # Skip labels for 0 count
-
-        font = QFont("Arial", 8)
-        painter.setFont(font)
-        fm = QFontMetrics(font)
-
-        # Calculate angle for text and line
-        angle_text = angle_start + angle_span / 2
-        radian = math.radians(angle_text)
-
-        # Calculate label position
-        external_radius = radius + 35  # Increased for label space
-        x = center.x() + external_radius * math.cos(radian)
-        y = center.y() + external_radius * math.sin(radian)
-
-        # Text for label
-        text = f"{material} (Stk: {count})"
-        text_width = fm.horizontalAdvance(text)
-        text_height = fm.height()
-
-        # Adjust label position based on quadrant
-        if 0 <= angle_text < 90:
-            text_x = x
-            text_y = y
-        elif 90 <= angle_text < 180:
-            text_x = x - text_width
-            text_y = y
-        elif 180 <= angle_text < 270:
-            text_x = x - text_width
-            text_y = y - text_height
-        else:
-            text_x = x
-            text_y = y - text_height
-
-        # Draw line from segment to label
-        painter.setPen(Qt.black)
-        painter.drawLine(
-            int(center.x() + radius * math.cos(radian)),
-            int(center.y() + radius * math.sin(radian)),
-            int(x), int(y)
-        )
-
-        # Draw label
-        painter.drawText(int(text_x), int(text_y), text)
 
 
 class DocumentationDialog(QtWidgets.QDialog):
@@ -177,6 +129,10 @@ class IFCColorChanger(QtWidgets.QWidget):
         self.user_selected_colors = {}
         self.resize(950, 600)
         self.setWindowTitle('IFC Color Changer')
+
+        # Automatically open the file dialog to load an IFC file
+        self.load_ifc_file()
+
         self.show()
 
     def load_color_map_from_json(self, json_file_path):
@@ -199,38 +155,74 @@ class IFCColorChanger(QtWidgets.QWidget):
 
     def initUI(self):
         self.menuBar = QMenuBar(self)  
-        # Add a 'More' menu
-        moreMenu = self.menuBar.addMenu('&More')
+        # Menu Bar
+        self.menuBar = QMenuBar(self)
+        fileMenu = self.menuBar.addMenu('&File')
+
+        # Load IFC File Action
+        loadIFCAction = QtWidgets.QAction('&Load IFC File', self)
+        loadIFCAction.triggered.connect(self.load_ifc_file)
+        fileMenu.addAction(loadIFCAction)
         exportAction = QtWidgets.QAction('&Export Color Mapping', self)
         exportAction.triggered.connect(self.export_color_mapping)
-        moreMenu.addAction(exportAction)
-        # Add a 'Help' menu
-        helpMenu = self.menuBar.addMenu('&Help')
+        fileMenu.addAction(exportAction)
         # Add 'View Documentation' action
         viewDocsAction = QtWidgets.QAction('&View Documentation', self)
         viewDocsAction.triggered.connect(self.view_documentation)
-        helpMenu.addAction(viewDocsAction)
+        fileMenu.addAction(viewDocsAction)
         mainLayout = QVBoxLayout()
         # Set top margin for the main layout
-        mainLayout.setContentsMargins(0, 30, 0, 0)  # Adjust the second parameter to increase/decrease top margin
+        mainLayout.setContentsMargins(10, 25, 10, 10)  # Adjust the second parameter to increase/decrease top margin
         splitter = QSplitter()  # Create a splitter for resizable layout
-        self.loadIFCButton = QtWidgets.QPushButton('Load IFC File')
-        self.loadIFCButton.clicked.connect(self.load_ifc_file)
+
         self.tableWidget = QtWidgets.QTableWidget()
         self.tableWidget.setFixedWidth(400)
-        self.saveButton = QtWidgets.QPushButton('Save Changes as new IFC')
-        self.saveButton.clicked.connect(self.apply_save_changes)
-        self.saveButton.setDisabled(True)
+
         # Color wheel widget
         self.colorWheelWidget = ColorWheelWidget([])
         self.colorWheelWidget.setMinimumHeight(300)  # Ensure visible height
         # Adding table and color wheel to the splitter
         splitter.addWidget(self.tableWidget)
         splitter.addWidget(self.colorWheelWidget)
-        # Adding widgets and splitter to the main layout
-        mainLayout.addWidget(self.loadIFCButton)
         mainLayout.addWidget(splitter)  # Add splitter to main layout
-        mainLayout.addWidget(self.saveButton)
+        # Create a horizontal layout for the save button
+        buttonLayout = QHBoxLayout()
+        self.saveButton = QtWidgets.QPushButton('Save Changes as new IFC')
+        self.saveButton.clicked.connect(self.apply_save_changes)
+        self.saveButton.setDisabled(True)
+
+        # Style the save button
+        self.saveButton.setStyleSheet("QPushButton {"
+                                      "background-color: #4CAF50; "  # Example green color
+                                      "color: white; "
+                                      "font-size: 16px; "
+                                      "border-radius: 5px; "
+                                      "padding: 10px; "
+                                      "margin: 10px; "
+                                      "}")
+        # Adding stretch to center the button
+        buttonLayout.addStretch(1)
+        buttonLayout.addWidget(self.saveButton)
+        buttonLayout.addStretch(1)
+
+        # Add the buttonLayout to the mainLayout
+        mainLayout.addLayout(buttonLayout)
+        self.setLayout(mainLayout)
+        self.setWindowTitle('IFC Color Changer')
+        self.show()
+
+        # Set the button width after the UI is shown
+        app_width = self.width()
+        button_width = int(2/3 * app_width)
+        self.saveButton.setFixedWidth(button_width)
+
+
+        buttonLayout.addWidget(self.saveButton)
+
+
+
+        # Add the buttonLayout to the mainLayout
+        mainLayout.addLayout(buttonLayout)
         self.setLayout(mainLayout)
         self.setWindowTitle('IFC Color Changer')
         self.show()
@@ -279,16 +271,21 @@ class IFCColorChanger(QtWidgets.QWidget):
         self.update_color_wheel()
 
     def update_color_wheel(self):
-        material_counts = self.aggregate_material_counts()
+        # Initialize an empty list for material_data
         material_data = []
-        for material_name, color in self.material_color_map.items():
-            count = material_counts.get(material_name, 0)
+
+        # Iterate over the rows of the table
+        for row in range(self.tableWidget.rowCount()):
+            material_name = self.tableWidget.item(row, 1).text()
+            color = self.material_color_map.get(material_name, [255, 255, 255])  # Default to white if not found
+            count = int(self.tableWidget.item(row, 2).text())
             material_data.append((material_name, color, count))
 
-        # Sort material data by count in descending order
-        sorted_material_data = sorted(material_data, key=lambda x: x[2], reverse=True)
+        # Sort material_data by count in the same way as the table
+        material_data.sort(key=lambda x: x[2], reverse=True)
 
-        self.colorWheelWidget.material_data = sorted_material_data
+        # Update the material_data in the color wheel
+        self.colorWheelWidget.material_data = material_data
         self.colorWheelWidget.update()
 
 
@@ -315,13 +312,18 @@ class IFCColorChanger(QtWidgets.QWidget):
 
     def populate_material_table(self):
         self.tableWidget.setRowCount(0)
-        self.tableWidget.setColumnCount(3)
-        self.tableWidget.setHorizontalHeaderLabels(['', 'Material', 'New Color'])
+        self.tableWidget.setColumnCount(4)
+        self.tableWidget.setHorizontalHeaderLabels(['', 'Material', 'Count', 'New Color'])
 
         if not self.ifc_file:
             return
-        
-        for material in self.ifc_file.by_type('IfcMaterial'):
+
+        material_counts = self.aggregate_material_counts()
+
+        # Sort materials by count
+        sorted_materials = sorted(self.ifc_file.by_type('IfcMaterial'), key=lambda m: material_counts.get(m.Name, 0), reverse=True)
+
+        for material in sorted_materials:
             row_position = self.tableWidget.rowCount()
             self.tableWidget.insertRow(row_position)
 
@@ -332,20 +334,24 @@ class IFCColorChanger(QtWidgets.QWidget):
             # Material name
             self.tableWidget.setItem(row_position, 1, QtWidgets.QTableWidgetItem(material.Name))
 
-            # Check if material is in JSON mapping
+            # Material count
+            count = material_counts.get(material.Name, 0)
+            count_item = QtWidgets.QTableWidgetItem(str(count))
+            self.tableWidget.setItem(row_position, 2, count_item)
+
+            # Color chooser or display
             if material.Name in self.material_color_map:
-                # Material is in JSON mapping
                 color_checkbox.setChecked(True)
                 color = self.material_color_map[material.Name]
                 rgb_string = f"RGB({color[0]}, {color[1]}, {color[2]})"
                 color_item = QtWidgets.QTableWidgetItem(rgb_string)
                 color_item.setBackground(QtGui.QColor(*color))
-                self.tableWidget.setItem(row_position, 2, color_item)
+                self.tableWidget.setItem(row_position, 3, color_item)
             else:
-                # Material not in JSON mapping, provide a button for color picker
                 color_btn = QtWidgets.QPushButton('Choose Color')
                 color_btn.clicked.connect(lambda _, row=row_position: self.open_color_picker(row))
-                self.tableWidget.setCellWidget(row_position, 2, color_btn)
+                self.tableWidget.setCellWidget(row_position, 3, color_btn)
+
 
 
         # Resize each column to fit its contents
