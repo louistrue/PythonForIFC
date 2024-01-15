@@ -2,13 +2,42 @@ import ifcopenshell
 from ifcopenshell import api
 import json
 import sys
-from PyQt5 import QtWidgets, QtGui, QtCore
-from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QSplitter, QWidget, QMenuBar, QCheckBox, QPushButton, QTableWidget, QTableWidgetItem, QColorDialog, QFileDialog
-from PyQt5.QtGui import QPainter, QPolygon, QColor, QFont, QFontMetrics
-from PyQt5.QtCore import Qt, QPoint, QRect
-from PyQt5 import QtWidgets, QtCore
-import math
+from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QSplitter, QWidget, QMenuBar
+from PyQt5.QtGui import QPainter, QColor
+from PyQt5.QtCore import Qt, QRect, QThread, pyqtSignal
 
+class FileOperationWorker(QThread):
+    finished = pyqtSignal(bool, str, object)  # Using object to handle various types
+
+    def __init__(self, filepath, operation):
+        super().__init__()
+        self.filepath = filepath
+        self.operation = operation
+        self.ifc_file = None  # Initialize ifc_file here
+
+    def run(self):
+        try:
+            if self.operation == 'load':
+                self.ifc_file = ifcopenshell.open(self.filepath)
+                materials = self.load_material_data(self.ifc_file)
+                self.finished.emit(True, "Success", self.ifc_file)
+
+            elif self.operation == 'save':
+                # Perform the saving operation
+                self.ifc_file.write(self.filepath) 
+                pass 
+
+            self.finished.emit(True, "Success", self.ifc_file)  # Pass the loaded IFC file
+
+        except Exception as e:
+            self.finished.emit(False, f"Failed: {str(e)}", {})
+
+    def load_material_data(self, ifc_file):
+        materials = {}
+        for material in ifc_file.by_type('IfcMaterial'):
+            materials[material.id()] = material.Name
+        return materials
 
 class ColorWheelWidget(QWidget):
     def __init__(self, material_data, parent=None):
@@ -17,30 +46,26 @@ class ColorWheelWidget(QWidget):
             [(m, c, e) for m, c, e in material_data if e > 0], 
             key=lambda x: x[2], reverse=True
         )
-        
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        # Adjust size for external labels
-        size = min(self.width(), self.height()) - 150  # Reserve space for labels
-        rect = QRect(int((self.width() - size) / 2), int((self.height() - size) / 2), size, size)
+        # Calculate static values
+        size = min(self.width(), self.height()) - 150
+        rect = QRect((self.width() - size) // 2, (self.height() - size) // 2, size, size)
         center = rect.center()
         radius = size / 2
-
         total_entities = sum(count for _, _, count in self.material_data)
-        angle_start = 0
-        for index, (material, color, count) in enumerate(self.material_data):
-            if count > 0:
-                proportion = count / total_entities
-                angle_span = 360 * proportion
-                # Draw segment
-                painter.setBrush(QColor(*color))
-                painter.setPen(Qt.black)  # Set pen to black color
-                painter.drawPie(rect, int(angle_start * 16), int(angle_span * 16))
-                angle_start += angle_span
 
+        angle_start = 0
+        for _, (material, color, count) in enumerate(self.material_data):
+            proportion = count / total_entities
+            angle_span = 360 * proportion
+            painter.setBrush(QColor(*color))
+            painter.setPen(Qt.black)
+            painter.drawPie(rect, int(angle_start * 16), int(angle_span * 16))
+            angle_start += angle_span
 
 
 
@@ -125,7 +150,7 @@ class IFCColorChanger(QtWidgets.QWidget):
         self.ifc_file = None
         self.material_color_map = {}
         self.initUI()
-        self.load_color_map_from_json('IfcScripts/IfcColorChanger/2396MaterialColorMapping.json')
+        self.load_color_map_from_json('IfcScripts/IfcColorChanger/2396_MaterialColorMapping.json')
         self.user_selected_colors = {}
         self.resize(950, 600)
         self.setWindowTitle('IFC Color Changer')
@@ -166,11 +191,13 @@ class IFCColorChanger(QtWidgets.QWidget):
         exportAction = QtWidgets.QAction('&Export Color Mapping', self)
         exportAction.triggered.connect(self.export_color_mapping)
         fileMenu.addAction(exportAction)
+
         # Add 'View Documentation' action
         viewDocsAction = QtWidgets.QAction('&View Documentation', self)
         viewDocsAction.triggered.connect(self.view_documentation)
         fileMenu.addAction(viewDocsAction)
         mainLayout = QVBoxLayout()
+
         # Set top margin for the main layout
         mainLayout.setContentsMargins(10, 25, 10, 10)  # Adjust the second parameter to increase/decrease top margin
         splitter = QSplitter()  # Create a splitter for resizable layout
@@ -181,10 +208,12 @@ class IFCColorChanger(QtWidgets.QWidget):
         # Color wheel widget
         self.colorWheelWidget = ColorWheelWidget([])
         self.colorWheelWidget.setMinimumHeight(300)  # Ensure visible height
+
         # Adding table and color wheel to the splitter
         splitter.addWidget(self.tableWidget)
         splitter.addWidget(self.colorWheelWidget)
         mainLayout.addWidget(splitter)  # Add splitter to main layout
+
         # Create a horizontal layout for the save button
         buttonLayout = QHBoxLayout()
         self.saveButton = QtWidgets.QPushButton('Save Changes as new IFC')
@@ -216,10 +245,7 @@ class IFCColorChanger(QtWidgets.QWidget):
         button_width = int(2/3 * app_width)
         self.saveButton.setFixedWidth(button_width)
 
-
         buttonLayout.addWidget(self.saveButton)
-
-
 
         # Add the buttonLayout to the mainLayout
         mainLayout.addLayout(buttonLayout)
@@ -233,16 +259,10 @@ class IFCColorChanger(QtWidgets.QWidget):
 
 
     def export_color_mapping(self):
-        # Combine both predefined and user-defined color mappings
         combined_color_map = {**self.material_color_map, **self.user_selected_colors}
-
-        # Transform the color mapping into the required JSON structure
         json_data = [{"Material": material, "Color": color} for material, color in combined_color_map.items()]
-
-        # Ask the user where to save the JSON file
         options = QtWidgets.QFileDialog.Options()
         fileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save Color Mapping", "", "JSON Files (*.json)", options=options)
-
         if fileName:
             try:
                 with open(fileName, 'w') as file:
@@ -254,26 +274,25 @@ class IFCColorChanger(QtWidgets.QWidget):
 
 
     def load_ifc_file(self):
-        """
-        Load an IFC file using a file dialog and populate the table with materials.
-        """
         file_dialog = QtWidgets.QFileDialog()
-        ifc_file_path, _ = file_dialog.getOpenFileName(self, 'Open IFC File', '', 'IFC Files (*.ifc)')
+        ifc_file_path, _ = file_dialog.getOpenFileName(self, 'Open IFC File','', 'IFC Files (*.ifc)')
         if ifc_file_path:
-            try:
-                self.ifc_file = ifcopenshell.open(ifc_file_path)
-                self.populate_material_table()
-                self.saveButton.setEnabled(True)  # Enable the save button here
-            except Exception as e:
-                QtWidgets.QMessageBox.critical(self, 'Error', f'Failed to load IFC file: {e}')
-        
-        # Update color wheel with new data
-        self.update_color_wheel()
+            self.worker = FileOperationWorker(ifc_file_path, 'load')
+            self.worker.finished.connect(self.on_file_loaded)
+            self.worker.start()
+
+    def on_file_loaded(self, success, message, ifc_file):
+        if success:
+            self.ifc_file = ifc_file  # Update the ifc_file attribute
+            self.populate_material_table()  # Populate the table
+            self.update_color_wheel()  # Update the color wheel
+            self.saveButton.setEnabled(True)
+        else:
+            QtWidgets.QMessageBox.critical(self, 'Error', message)
+
 
     def update_color_wheel(self):
-        # Initialize an empty list for material_data
         material_data = []
-
         # Iterate over the rows of the table
         for row in range(self.tableWidget.rowCount()):
             material_name = self.tableWidget.item(row, 1).text()
@@ -311,6 +330,7 @@ class IFCColorChanger(QtWidgets.QWidget):
 
 
     def populate_material_table(self):
+        self.tableWidget.setUpdatesEnabled(False)
         self.tableWidget.setRowCount(0)
         self.tableWidget.setColumnCount(4)
         self.tableWidget.setHorizontalHeaderLabels(['', 'Material', 'Count', 'New Color'])
@@ -352,8 +372,6 @@ class IFCColorChanger(QtWidgets.QWidget):
                 color_btn.clicked.connect(lambda _, row=row_position: self.open_color_picker(row))
                 self.tableWidget.setCellWidget(row_position, 3, color_btn)
 
-
-
         # Resize each column to fit its contents
         for column in range(self.tableWidget.columnCount()):
             self.tableWidget.resizeColumnToContents(column)
@@ -361,6 +379,8 @@ class IFCColorChanger(QtWidgets.QWidget):
         # Optionally, set a minimum width for the table
         total_width = sum([self.tableWidget.columnWidth(column) for column in range(self.tableWidget.columnCount())])
         self.tableWidget.setMinimumWidth(total_width + 60) 
+        self.tableWidget.setUpdatesEnabled(True)
+
 
     def open_color_picker(self, row):
         color_dialog = QtWidgets.QColorDialog(self)
@@ -376,8 +396,6 @@ class IFCColorChanger(QtWidgets.QWidget):
             color_item = QtWidgets.QTableWidgetItem(rgb_string)
             color_item.setBackground(chosen_color)
             self.tableWidget.setItem(row, 2, color_item)
-
-
 
 
     def get_representation_and_value(self, material_name):
@@ -408,6 +426,7 @@ class IFCColorChanger(QtWidgets.QWidget):
         else:
             # Default value if material is not in the color map
             return 1.0  # A default float value, e.g., 1.0
+
 
     def assign_color_to_element(self, ifc_file, representation, value):
         # Check if the value is a list (RGB values)
