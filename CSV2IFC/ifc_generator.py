@@ -108,7 +108,7 @@ def create_ifc_hierarchy(ifc_file, owner_history):
     building = ifc_file.createIfcBuilding(create_guid(), owner_history, 'Building', None, None, building_placement, None, None, "ELEMENT", None, None, None)
     
     storey_placement = create_ifclocalplacement(ifc_file, relative_to=building_placement)
-    elevation = 0.0  # You can change this as needed
+    elevation = 0.0  # Change height offset here
     building_storey = ifc_file.createIfcBuildingStorey(create_guid(), owner_history, 'Storey', None, None, storey_placement, None, None, "ELEMENT", elevation)
     
     return site, building, building_storey

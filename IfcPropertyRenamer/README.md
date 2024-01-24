@@ -1,82 +1,85 @@
-# IfcPropertyRenamer: User Guide 📘
+# IFCColorChanger
+
+## Overview
+
+`IFCColorChanger` is a Python-based tool equipped with a PyQt5 interface, designed for efficiently modifying the color of materials in IFC files. It allows users to apply color changes using a JSON file for color mapping, providing a seamless and user-friendly experience.
 
 ## Table of Contents
-- [Introduction](#introduction)
+
+- [Overview](#overview)
 - [Features](#features)
-  - [Load IFC File](#load-ifc-file)
-  - [Save Changes](#save-changes)
-  - [Save and Load Configurations](#save-and-load-configurations)
-  - [Apply Changes](#apply-changes)
-- [How to Use](#how-to-use)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing-)
-- [License](#license-)
-- [Acknowledgments](#acknowledgments-)
+- [Installation](#installation)
+  - [Prerequisites](#prerequisites)
+- [Usage](#usage)
+- [JSON File Format](#json-file-format)
+- [Customization](#customization)
+- [License](#license)
+- [Contact](#contact)
+- [Acknowledgments](#acknowledgments)
 
----
+## Features
 
-## Introduction 🌟
-IFC Property Renamer is a specialized tool designed to simplify the renaming of Property Sets (Psets) and Properties within an IFC file. It features a user-friendly interface with functionalities like bulk renaming and configuration saving.
+- **Load IFC Files**: Facilitates opening and viewing materials in IFC files.
+- **Color Mapping**: Utilizes JSON files for defining new color mappings.
+- **Interactive GUI**: Employs a user-friendly and intuitive PyQt5 interface.
+- **Real-time Updates**: Allows instant visualization of color changes.
+- **Save Functionality**: Enables exporting the modified IFC file with updated colors.
 
-![Main UI](path/to/main_ui_screenshot.png)
+## Installation
 
----
+### Prerequisites
 
-## Features 🛠
+- Python 3.x
+- PyQt5
+- ifcopenshell
 
-### Load IFC File 📂
-Easily load an existing IFC file into the application for editing. The application will automatically populate a tree view with Property Sets and Properties.
+Install the required libraries using pip:
 
-![Load IFC](path/to/load_ifc_screenshot.png)
+```bash
+pip install PyQt5 ifcopenshell
+```
 
-### Save Changes 💾
-Preserve any modifications made by saving them back to the IFC file. This ensures that your changes are not lost.
+## Usage
 
-![Save Changes](path/to/save_changes_screenshot.png)
+Run the application using the following command:
 
-### Save and Load Configurations ⚙️
-Save your renaming configurations to a JSON file and load them back whenever needed. This is useful for applying the same renaming rules across multiple IFC files.
+```bash
+python IFCColorChanger.py
+```
 
-![Save and Load Configurations](path/to/save_and_load_configurations_screenshot.png)
+Follow these steps to modify colors:
 
-### Apply Changes ✅
-Press the 'Apply Changes' button to make the renaming adjustments. The application will reflect the changes in the tree view.
+1. **Load an IFC File**: Use 'Load IFC File' to open your desired IFC file.
+2. **Load Color Mapping JSON**: Ensure the JSON file with color mappings is correctly formatted and accessible.
+3. **Apply Changes**: Choose materials and apply new colors.
+4. **Save the File**: Export the modified IFC file under a new name.
 
-![Apply Changes](path/to/apply_changes_screenshot.png)
+## JSON File Format
 
----
+Ensure your JSON file for color mappings adheres to this structure:
 
-## How to Use 📝
+```json
+[
+    {
+        "Material": "Concrete",
+        "Color": [255, 255, 255]
+    },
+    ...
+]
+```
 
-1. **Load an IFC File**: Click the 'Load IFC File' button and browse to select the IFC file you want to edit.
-2. **Review and Edit**: Navigate through the tree view and select the Property Sets or Properties you wish to rename.
-3. **Apply Changes**: After making your changes, click 'Apply Changes' to finalize them.
-4. **Save Configurations**: Optionally, you can save your renaming configurations to a JSON file for future use.
-5. **Load Configurations**: If you have a previously saved configuration, you can load it to apply the same renaming rules.
-6. **Save File**: Click 'Save New IFC File' to save all changes back to the IFC file.
+## Customization
 
----
+The application offers flexibility in terms of color choices and material selections, allowing for customized color schemes to be applied to various materials within IFC files.
 
-## Troubleshooting 🛠️
+## License
 
-If you encounter any issues, please check the log files or contact us at [support@lt.plus](mailto:support@lt.plus).
+The licensing details for this project are to be determined (tbd).
 
----
+## Contact
 
-## Contributing 🤝
+For inquiries or feedback, please reach out to [Louis Trümpler](mailto:louis@ltplus.com).
 
-For contributions, please create a new branch and submit a Pull Request.
+## Acknowledgments
 
----
-
-## License 📜
-
-tbd
-
----
-
-## Acknowledgments 👏
-
-- [IfcOpenShell](https://ifcopenshell.org)
-
----
+Special thanks to [IfcOpenShell](https://ifcopenshell.org) for their foundational tools.

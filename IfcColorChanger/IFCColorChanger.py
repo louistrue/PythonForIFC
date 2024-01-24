@@ -1,4 +1,3 @@
-# Import necessary libraries
 import ifcopenshell
 from ifcopenshell import api
 import json

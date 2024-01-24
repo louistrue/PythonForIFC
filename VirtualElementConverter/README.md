@@ -1,100 +1,63 @@
-# VirtualElementConverter User Guide 📘
+# VirtualElementConverter
+
+## Overview
+
+`VirtualElementConverter` is a Python-based tool designed for converting specific IFC classes to `IfcVirtualElement`. It offers a simplified representation of complex building structures, thereby enhancing the performance of your IFC projects.
 
 ## Table of Contents
-- [Overview](#overview)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Launching the Application](#launching-the-application)
-  - [User Interface](#user-interface)
-  - [Loading an IFC File](#loading-an-ifc-file)
-  - [Viewing IFC Classes](#viewing-ifc-classes)
-  - [Converting to `IfcVirtualElement`](#converting-to-ifcvirtualelement)
-  - [Saving the Modified File](#saving-the-modified-file)
+
+1. [Overview](#overview)
+2. [Requirements](#requirements)
+3. [Installation](#installation)
+4. [Usage](#usage)
+   - [Starting the Application](#starting-the-application)
+   - [User Interface](#user-interface)
+   - [Loading an IFC File](#loading-an-ifc-file)
+   - [Displaying IFC Classes](#displaying-ifc-classes)
+   - [Converting to IfcVirtualElement](#converting-to-ifcvirtualelement)
+   - [Saving the Modified File](#saving-the-modified-file)
 - [Contributing](#contributing-)
 - [License](#license-)
-- [Acknowledgments](#acknowledgments-)
+- [Acknowledgments](#acknowledgments)
 
 ---
 
-## Overview 🌟
+## Requirements
 
-`VirtualElementConverter` is a desktop application designed for professionals in the construction sector. The application specializes in manipulating Industry Foundation Classes (IFC) files, offering functionalities like:
+- Python 3.x
+- PyQt5
+- ifcopenshell
 
-- 📂 Loading an existing IFC file
-- 📋 Viewing IFC classes along with their occurrence counts
-- 🔄 Converting selected class objects to `IfcVirtualElement`
-- 💾 Saving the modified IFC file
+## Installation
 
----
+1. Install Python 3.x, if not already installed.
+2. Install required Python packages using the command: `pip install PyQt5 ifcopenshell`.
 
-## Requirements 🛠
+## Usage
 
-- Python 3.x installed 🐍
-- PyQt5 package installed 📦
-- IfcOpenShell package installed 📦
+### Starting the Application
 
----
+Execute the Python script to start the application.
 
-## Installation ⚙️
+### User Interface
 
-1. **Install Python Packages**: Use the following commands to install the required packages:
-    ```bash
-    pip install PyQt5
-    pip install ifcopenshell
-    ```
-2. **Download the Script**: Fetch the `VirtualElementConverter.py` Python script from the repository.
+The main user interface, displayed after launching the application, contains all necessary options for the conversion process.
 
----
+### Loading an IFC File
 
-## Usage 📝
+Click on "Load IFC File" to open a file dialog and select the desired IFC file.
 
-### Launching the Application 🚀
+### Displaying IFC Classes
 
-Execute the following command in your terminal to run the script:
-```bash
-python VirtualElementConverter.py
-```
+A dropdown menu lists all available IFC classes in the loaded file. Choose the class you wish to convert into `IfcVirtualElement`.
 
-### User Interface 🖥
+### Converting to IfcVirtualElement
 
-Upon launch, the application presents a clean UI composed of:
+After selecting an IFC class, click the "Convert" button to begin the conversion process.
 
-- **Load IFC File Button**: For importing an IFC file
-- **IFC Class List**: Lists IFC classes and their occurrences in the loaded file
-- **Convert to Virtual Element Button**: For converting selected classes to `IfcVirtualElement`
-- **Save As Button**: To save your modifications
+### Saving the Modified File
 
-![User Interface](path/to/ui_screenshot.png)
-
-### Loading an IFC File 📂
-
-1. Click on the `Load IFC File` button.
-2. Navigate to your desired IFC file.
-3. Select the file and click "Open."
-
-### Viewing IFC Classes 📋
-
-After a file is loaded, the IFC Class List will populate with the IFC classes present, along with their occurrence counts.
-
-### Converting to `IfcVirtualElement` 🔄
-
-1. Pick the IFC class to be converted from the list.
-2. Hit the `Convert to Virtual Element` button.
-
-This will transform all objects of the chosen class to `IfcVirtualElement`.
-
-### Saving the Modified File 💾
-
-1. Click the `Save As` button.
-2. Choose your desired save location.
-3. Enter a filename and click "Save."
-
----
-
-## Troubleshooting 🛠️
-
-If you face any issues, please check the log files or reach out at [support@lt.plus](mailto:support@lt.plus).
+A "Save As" dialog will appear after conversion. Specify the location and name for the modified IFC file.
 
 ---
 
@@ -106,10 +69,10 @@ For contributions, please create a new branch and submit a Pull Request.
 
 ## License 📜
 
-tbd 
+The licensing details for this project are to be determined (tbd).
 
 ---
 
 ## Acknowledgments 👏
 
-- IfcOpenShell https://ifcopenshell.org
+Special thanks to [IfcOpenShell](https://ifcopenshell.org) for providing the essential tools and support.

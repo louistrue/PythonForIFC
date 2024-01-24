@@ -45,3 +45,7 @@ tbd
 
 ## Contact
 For any queries or feedback, please contact [Louis Trümpler](mailto:louis@ltplus.com).
+
+## Acknowledgments 👏
+
+- IfcOpenShell: https://ifcopenshell.org

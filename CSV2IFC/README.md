@@ -1,110 +1,51 @@
-# CSV to IFC Tool 🛠️
+# CSV to IFC Tool README
 
-## Table of Contents 📑
-- [Overview](#overview-)
-- [Features](#features-)
-- [Requirements](#requirements-)
-- [Installation](#installation-)
-- [Usage](#usage-)
-- [Code Structure](#code-structure-)
-- [Troubleshooting](#troubleshooting-)
-- [Contributing](#contributing-)
-- [License](#license-)
-- [Acknowledgments](#acknowledgments-)
+## Overview
+The CSV to IFC Tool is a Python-based utility designed to convert CSV files into IFC (Industry Foundation Classes) format. This tool is especially useful for generating geometric representations of data like potential field measurements, and is equipped with a color-coding system for visual representation, enhancing decision-making and enabling augmented reality applications.
 
----
+## Features
+- **CSV Import**: Import data from CSV files.
+- **IFC Generation**: Automatically create IFC files with detailed element positions and custom properties.
+- **Dynamic Styling**: Color-code elements based on specific property values.
+- **File Dialogs**: Graphical user interface dialogs for file operations.
 
-## Overview 🌐
-
-This Python script enables you to generate an IFC (Industry Foundation Classes) file based on a given CSV file. It's particularly useful to generate geometric representation of measurement results like "potential field measurements" among others. The tool has an in-built color-coding system to visually represent certain values, facilitating better decision-making and ultimately enabling augmented reality use cases...
-
----
-
-## Features 🌟
-
-- **CSV Import** 📤: Import your data from a CSV file.
-- **IFC Generation** 🏗️: Automatically generate an IFC file with elements, including their positions and custom properties.
-- **Dynamic Styling** 🎨: Apply color-coding based on custom property values.
-- **File Dialogs** 📂: GUI dialogs for opening and saving files.
-
----
-
-## Requirements 📋
-
+## Requirements
 - Python 3.x
-- `ifcopenshell` package
-- `tkinter` package
-- `uuid` package
-- `csv` package
+- `ifcopenshell`
+- `tkinter`
+- `uuid`
+- `csv`
 
----
+## Installation
+1. Install Python 3.x from the official [Python website](https://www.python.org/downloads/).
+2. Install required packages: `pip install ifcopenshell tkinter uuid csv`
+3. Clone the repository: `git clone https://github.com/louistrue/01_IfcPython/tree/main/CSV2IFC`
+4. Navigate to the directory: `cd CSV2IFC`
 
-## Installation 💻
+## Usage
+1. Run the script: `ifc_generator.py`
+2. Select a CSV file through the Open File Dialog.
+3. Save the generated IFC file using the Save File Dialog.
 
-1. **Install Python 3.x from [here](https://www.python.org/downloads/).**
+## Code Structure
+- `create_guid()`: Generates unique identifiers.
+- `create_ifcaxis2placement()`: Defines local placements.
+- `create_ifcextrudedareasolid()`: Creates extruded area solids.
+- `assign_color_to_element()`: Applies color to elements based on values.
+- `create_shape()`: Generates shape representations.
+- `create_ifc_hierarchy()`: Establishes IFC file hierarchy.
+- `create_and_link_containers()`: Links building, site, and storey.
+- `process_elements_from_csv()`: Reads elements from CSV and populates IFC.
+- `create_ifc()`: Begins IFC file creation.
 
-2. **Install required Python packages:**
-    ```sh
-    pip install ifcopenshell tkinter uuid csv
-    ```
+## Troubleshooting
+For issues, consult the log files or contact [support@lt.plus](mailto:support@lt.plus).
 
-3. **Clone the Repository:**
-    ```sh
-    git clone https://github.com/louistrue/01_IfcPython/tree/main/CSV2IFC
-    ```
+## Contributing
+To contribute, create a new branch and submit a pull request.
 
-4. **Navigate to the Directory:**
-    ```sh
-    cd CSV2IFC
-    ```
+## License
+This project's license is to be determined.
 
----
-
-## Usage 🚀
-
-1. **Run the Script:**
-    ```sh
-    ifc_generator.py
-    ```
-2. **Open File Dialog**: A file dialog will appear. Select your input CSV file.
-3. **Save File Dialog**: Another dialog will appear for you to save your IFC file.
-4. **Complete**: The IFC file will be generated and saved.
-
----
-
-## Code Structure 🏛️
-
-- `create_guid()`: Generates a unique identifier.
-- `create_ifcaxis2placement()`: Defines local placement.
-- `create_ifcextrudedareasolid()`: Creates an extruded area solid.
-- `assign_color_to_element()`: Applies color based on values.
-- `create_shape()`: Generates a shape representation for elements.
-- `create_ifc_hierarchy()`: Sets up the IFC file's hierarchy.
-- `create_and_link_containers()`: Links the building, site, and storey.
-- `process_elements_from_csv()`: Populates the IFC with elements from the CSV file.
-- `create_ifc()`: Initiates the creation of the IFC file.
-
----
-
-## Troubleshooting 🛠️
-
-If you face any issues, please check the log files or reach out at [support@lt.plus](mailto:support@lt.plus).
-
----
-
-## Contributing 🤝
-
-For contributions, please create a new branch and submit a Pull Request.
-
----
-
-## License 📜
-
-tbd 
-
----
-
-## Acknowledgments 👏
-
-- IfcOpenShell https://ifcopenshell.org
-- Tkinter Library
+## Acknowledgments
+Special thanks to IfcOpenShell (https://ifcopenshell.org).
