@@ -3,15 +3,6 @@
 ## 📖 Introduction
 The IFC Property Renamer is an open-source tool designed to simplify the process of renaming properties and property sets (Psets) within Industry Foundation Classes (IFC) files. Utilizing a graphical user interface (GUI) built with PyQt5, it provides an easy way for users to load, view, and modify IFC file properties before saving the changes back to IFC format.
 
-## 📋 Table of Contents
-- [Introduction](#introduction)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Dependencies](#dependencies)
-- [Contributing](#contributing)
-- [Acknowledgments](#acknowledgments)
-- [License](#license)
 
 ## 🌟 Features
 - Load and display properties and Psets from IFC files.
