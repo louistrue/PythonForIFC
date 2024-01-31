@@ -1,85 +1,64 @@
-# IFCColorChanger
+# 🏗 IFC Property Renamer
 
-## Overview
+## 📖 Introduction
+The IFC Property Renamer is an open-source tool designed to simplify the process of renaming properties and property sets (Psets) within Industry Foundation Classes (IFC) files. Utilizing a graphical user interface (GUI) built with PyQt5, it provides an easy way for users to load, view, and modify IFC file properties before saving the changes back to IFC format.
 
-`IFCColorChanger` is a Python-based tool equipped with a PyQt5 interface, designed for efficiently modifying the color of materials in IFC files. It allows users to apply color changes using a JSON file for color mapping, providing a seamless and user-friendly experience.
+## 📋 Table of Contents
+- [Introduction](#-introduction)
+- [Features](#-features)
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [Dependencies](#-dependencies)
+- [Contributing](#-contributing)
+- [Acknowledgments](#-acknowledgments)
+- [License](#-license)
 
-## Table of Contents
+## 🌟 Features
+- Load and display properties and Psets from IFC files.
+- Rename property sets and properties within the IFC files.
+- Preview changes before applying them.
+- Save and load renaming configurations in JSON format.
+- Export modified IFC files with the applied changes.
 
-- [Overview](#overview)
-- [Features](#features)
-- [Installation](#installation)
-  - [Prerequisites](#prerequisites)
-- [Usage](#usage)
-- [JSON File Format](#json-file-format)
-- [Customization](#customization)
-- [License](#license)
-- [Contact](#contact)
-- [Acknowledgments](#acknowledgments)
+## 💾 Installation
 
-## Features
+To use the IFC Property Renamer, you'll need Python installed on your system along with the necessary dependencies. Here's how you can get started:
 
-- **Load IFC Files**: Facilitates opening and viewing materials in IFC files.
-- **Color Mapping**: Utilizes JSON files for defining new color mappings.
-- **Interactive GUI**: Employs a user-friendly and intuitive PyQt5 interface.
-- **Real-time Updates**: Allows instant visualization of color changes.
-- **Save Functionality**: Enables exporting the modified IFC file with updated colors.
-
-## Installation
-
-### Prerequisites
-
-- Python 3.x
-- PyQt5
-- ifcopenshell
-
-Install the required libraries using pip:
+1. Clone the repository or download the source code.
+2. Install the required dependencies:
 
 ```bash
 pip install PyQt5 ifcopenshell
 ```
 
-## Usage
+## 🚀 Usage
 
-Run the application using the following command:
+To run the application, navigate to the directory containing the script and run:
 
 ```bash
-python IFCColorChanger.py
+python ifc_property_renamer.py
 ```
 
-Follow these steps to modify colors:
+1. Click the "Load IFC File" button to select and load an IFC file.
+2. Browse the property sets and properties in the loaded IFC file.
+3. Enter a new name for a selected property or property set and click "Rename".
+4. Preview your changes in the preview window.
+5. Save your changes back to an IFC file by clicking "Save New IFC File".
+6. Optionally, save and load your renaming configurations with "Save Configurations" and "Load Configurations".
 
-1. **Load an IFC File**: Use 'Load IFC File' to open your desired IFC file.
-2. **Load Color Mapping JSON**: Ensure the JSON file with color mappings is correctly formatted and accessible.
-3. **Apply Changes**: Choose materials and apply new colors.
-4. **Save the File**: Export the modified IFC file under a new name.
 
-## JSON File Format
+## 🛠 Dependencies
+- Python 3
+- PyQt5
+- ifcopenshell
 
-Ensure your JSON file for color mappings adheres to this structure:
+## 🤝 Contributing
 
-```json
-[
-    {
-        "Material": "Concrete",
-        "Color": [255, 255, 255]
-    },
-    ...
-]
-```
+Contributions to the IFC Property Renamer are welcome! Whether it's submitting bugs, requesting features, or contributing code, your help is appreciated. Please feel free to fork the repository and submit pull requests.
 
-## Customization
+## ❤️ Acknowledgments
+Special thanks to IfcOpenShell for their foundational tools.
 
-The application offers flexibility in terms of color choices and material selections, allowing for customized color schemes to be applied to various materials within IFC files.
+## 📄 License
 
-## License
-
-The licensing details for this project are to be determined (tbd).
-
-## Contact
-
-For inquiries or feedback, please reach out to [Louis Trümpler](mailto:louis@ltplus.com).
-
-## Acknowledgments
-
-Special thanks to [IfcOpenShell](https://ifcopenshell.org) for their foundational tools.
+tbd
