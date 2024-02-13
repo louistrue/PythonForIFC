@@ -1,5 +1,6 @@
 import ifcopenshell
 import ifcopenshell.util.schema
+import json
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QLineEdit, QTreeWidget, QTreeWidgetItem, QListWidget, QLabel
 from PyQt5.QtGui import QColor, QBrush
 from PyQt5.QtCore import Qt
@@ -81,31 +82,6 @@ class App(QWidget):
             self.buildPropertyTree(entityType)
         self.updatePreviewTree()
 
-        def buildPropertyTree(self, entityType):
-            property_dict = {}
-            for fp, ifc_file in self.ifc_files:
-                entities = ifc_file.by_type(entityType)
-                for entity in entities:
-                    for attribute_name, attribute_value in entity.get_info().items():
-                        if attribute_name != "id":
-                            if attribute_name not in property_dict:
-                                property_dict[attribute_name] = {}
-                            if attribute_value not in property_dict[attribute_name]:
-                                property_dict[attribute_name][attribute_value] = []
-                            property_dict[attribute_name][attribute_value].append(fp)
-
-            entityTypeNode = QTreeWidgetItem(self.tree)
-            entityTypeNode.setText(0, entityType)
-            
-            for attribute_name, attribute_values in property_dict.items():
-                parent = QTreeWidgetItem(entityTypeNode)
-                parent.setText(0, attribute_name)
-                for value, files in attribute_values.items():
-                    child = QTreeWidgetItem(parent)
-                    child.setText(0, f"{value} (Files: {', '.join(files)})")
-
-        self.tree.expandAll()
-
     def confirmChanges(self):
         selected_item = self.tree.currentItem()
         if selected_item and selected_item.parent() and selected_item.parent().parent():
@@ -113,30 +89,52 @@ class App(QWidget):
             selected_entity = selected_item.parent().parent().text(0)
             new_value = self.editTextEdit.text()
 
-            # Fetch the expected data type using IfcOpenShell's schema utility
-            #entity_schema = ifcopenshell.util.schema.get_entity(selected_entity)
-            #attribute_schema = entity_schema.get_attribute_by_name(selected_property)
-            #expected_type = attribute_schema.type_of_attribute
+            # # Fetch the expected data type using IfcOpenShell's schema utility
+            # entity_schema = ifcopenshell.util.schema.by_name(selected_entity)
+            # attribute_schema = entity_schema.get_attribute_by_name(selected_property)
+            # expected_type = attribute_schema.type_of_attribute
 
-            # Type validation
-            #try:
-            #    if expected_type == "IfcInteger":
-            #        new_value = int(new_value)
-            #    elif expected_type == "IfcBoolean":
-            #        new_value = bool(new_value)
-            #    elif expected_type == "IfcFloat":
-            #        new_value = float(new_value)
-            #    # Add more type checks as needed
-            #except ValueError:
-            #    print(f"Invalid input. Expected a value of type {expected_type}.")
-            #    return
-
+            # # Convert the new value to the expected data type
+            # if expected_type == "IfcLabel":
+            #     new_value = str(new_value)
+            # elif expected_type == "IfcText":
+            #     new_value = str(new_value)
+            # elif expected_type == "IfcReal":
+            #     new_value = float(new_value)
+            # elif expected_type == "IfcInteger":
+            #     new_value = int(new_value)
+            # elif expected_type == "IfcBoolean":
+            #     new_value = bool(new_value)
+            # elif expected_type == "IfcIdentifier":
+            #     new_value = str(new_value)
+            # elif expected_type == "IfcTimeStamp":
+            #     new_value = str(new_value)
+            # elif expected_type == "IfcPositiveLengthMeasure":
+            #     new_value = float(new_value)
+            # elif expected_type == "IfcPlaneAngleMeasure":
+            #     new_value = float(new_value)
+            # elif expected_type == "IfcAreaMeasure":
+            #     new_value = float(new_value)
+            # elif expected_type == "IfcVolumeMeasure":
+            #     new_value = float(new_value)
+            # elif expected_type == "IfcCountMeasure":
+            #     new_value = int(new_value)
+            # elif expected_type == "IfcDescriptiveMeasure":
+            #     new_value = str(new_value)
+            # elif expected_type == "IfcMassMeasure":
+            #     new_value = float(new_value)
+            # elif expected_type == "IfcTimeMeasure":
+            #     new_value = float(new_value)
+            # elif expected_type == "IfcThermalTransmittanceMeasure":
+            #     new_value = float(new_value)
+            
+            
             change_entry = {
                 'entityType': selected_entity,
                 'property': selected_property,
                 'original_value': selected_item.text(0).split(' ')[0],
                 'new_value': new_value
-            }
+             }
 
             self.pending_changes.append(change_entry)
             self.undo_stack.append(change_entry)
@@ -239,7 +237,7 @@ class App(QWidget):
             parent.setText(0, attribute_name)
             for value, files in attribute_values.items():
                 child = QTreeWidgetItem(parent)
-                child.setText(0, f"{value} (Files: {', '.join(files)})")
+                child.setText(0, f"{value}")
         
         self.tree.expandAll()
 
