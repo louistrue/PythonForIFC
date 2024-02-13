@@ -77,7 +77,7 @@ class App(QWidget):
 
     def displayProperties(self):
         self.tree.clear()
-        for entityType in ['IfcProject', 'IfcSite', 'IfcBuilding', 'IfcBuildingStorey']:
+        for entityType in ['IfcProject', 'IfcSite', 'IfcBuilding', 'IfcBuildingStorey', 'IfcElementType', 'IfcElement', 'IfcSpaceType', 'IfcSpace']:
             self.buildPropertyTree(entityType)
         self.updatePreviewTree()
 
