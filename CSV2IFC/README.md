@@ -38,9 +38,6 @@ The CSV to IFC Tool is a Python-based utility designed to convert CSV files into
 - `process_elements_from_csv()`: Reads elements from CSV and populates IFC.
 - `create_ifc()`: Begins IFC file creation.
 
-## Troubleshooting
-For issues, consult the log files or contact [support@lt.plus](mailto:support@lt.plus).
-
 ## Contributing
 To contribute, create a new branch and submit a pull request.
 
