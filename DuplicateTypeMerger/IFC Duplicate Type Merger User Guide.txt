@@ -1,0 +1,74 @@
+# IFC Duplicate Type Merger User Guide
+
+## Table of Contents
+
+1. [Introduction](#introduction)
+2. [Requirements](#requirements)
+3. [Installation](#installation)
+4. [Getting Started](#getting-started)
+5. [FAQ](#faq)
+
+---
+
+## Introduction
+
+The IFC Duplicate Type Merger is a utility designed to clean up IFC files by merging duplicate `IfcTypeObject` entities based on selected properties. It provides an easy-to-use interface for selecting an IFC file, previewing changes, and then applying those changes.
+
+---
+
+## Requirements
+
+- Python 3.x
+- PyQt5
+- ifcopenshell
+
+---
+
+## Installation
+
+1. Install Python 3.x if you haven't already.
+2. Install the required Python packages by running `pip install PyQt5 ifcopenshell`.
+
+---
+
+## Getting Started
+
+### Step 1: Open the Application
+
+Run the Python script to launch the application.
+
+### Step 2: Load an IFC File
+
+Click the "Select IFC File" button to open a file dialog. Navigate to the IFC file you wish to clean up and select it.
+
+### Step 3: Choose a Property
+
+After loading the IFC file, a dropdown will appear listing all available `IfcTypeObject` properties. These are sorted by frequency, with the most commonly occurring properties at the top. Select the property you want to use for merging duplicates.
+
+### Step 4: Preview Changes
+
+Click the "Preview" button. The list of types will update to show what the IFC file will look like after merging duplicates based on the selected property.
+
+### Step 5: Apply Changes
+
+Once you're satisfied with the preview, click the "Apply" button. A "Save As" dialog will appear, allowing you to specify the location and name of the cleaned-up IFC file.
+
+---
+
+## FAQ
+
+### Q: What are the system requirements?
+
+**A:** The application requires Python 3.x, PyQt5, and ifcopenshell to run. 
+
+### Q: How are properties sorted in the dropdown?
+
+**A:** The properties are sorted by their frequency of occurrence in the loaded IFC file, with the most common properties appearing at the top.
+
+### Q: Can I undo changes?
+
+**A:** No, the changes cannot be undone once applied. It's recommended to preview changes carefully before applying them.
+
+### Q: How do I report bugs or request new features?
+
+**A:** Please email your queries or issue reports to the provided support email.
