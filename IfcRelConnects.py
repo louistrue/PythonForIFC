@@ -19,7 +19,6 @@ class IFCConnector(QMainWindow):
         self.setWindowTitle('IFC Element Connector')
         self.setGeometry(100, 100, 600, 400)
 
-        # Set stylesheet for a Material UI light look
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #FAFAFA;
@@ -56,7 +55,6 @@ class IFCConnector(QMainWindow):
         # Open file button
         open_file_layout = QHBoxLayout()
         self.open_file_button = QPushButton('Open IFC File', self)
-        self.open_file_button.setIcon(QIcon('open_file_icon.png'))  # Add appropriate icon path
         self.open_file_button.clicked.connect(self.open_ifc_file)
         open_file_layout.addWidget(self.open_file_button)
         main_layout.addLayout(open_file_layout)
@@ -92,12 +90,10 @@ class IFCConnector(QMainWindow):
         button_layout = QHBoxLayout()
 
         self.connect_button = QPushButton('Connect Elements', self)
-        self.connect_button.setIcon(QIcon('connect_icon.png'))  # Add appropriate icon path
         self.connect_button.clicked.connect(self.connect_elements)
         button_layout.addWidget(self.connect_button)
 
         self.save_button = QPushButton('Save IFC File', self)
-        self.save_button.setIcon(QIcon('save_icon.png'))  # Add appropriate icon path
         self.save_button.clicked.connect(self.save_ifc_file)
         button_layout.addWidget(self.save_button)
 
