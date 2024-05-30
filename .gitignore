@@ -1,4 +1,4 @@
 
 *.ifc
 **/_ALT/
-
+*.code-workspace
