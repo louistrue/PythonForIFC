@@ -8,16 +8,29 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
 from typing import Optional
 import os
+import asyncio
+import aiohttp
+import networkx as nx
+import pydot
+from networkx.drawing.nx_pydot import graphviz_layout
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
+def quote_if_colon(s):
+    if isinstance(s, str) and ':' in s:
+        return f'"{s}"'
+    return s
 
 class IFCConnector(QMainWindow):
     def __init__(self):
         super().__init__()
         self.ifc_file = None
+        self.connections = []
         self.initUI()
-    
+
     def initUI(self):
         self.setWindowTitle('IFC Element Connector')
-        self.setGeometry(100, 100, 600, 400)
+        self.setGeometry(100, 100, 1000, 800)
 
         self.setStyleSheet("""
             QMainWindow {
@@ -64,26 +77,31 @@ class IFCConnector(QMainWindow):
 
         self.label1 = QLabel('Select Relating Element:')
         element_layout.addWidget(self.label1)
-        
+
         self.combo1 = QComboBox(self)
         element_layout.addWidget(self.combo1)
-        
+
         self.label2 = QLabel('Select Related Element:')
         element_layout.addWidget(self.label2)
-        
+
         self.combo2 = QComboBox(self)
         element_layout.addWidget(self.combo2)
 
         main_layout.addLayout(element_layout)
-        
+
         # Description input layout
-        description_layout = QHBoxLayout()
+        description_layout = QVBoxLayout()
+        
+        description_input_layout = QHBoxLayout()
         self.label3 = QLabel('Description:')
-        description_layout.addWidget(self.label3)
-        
-        self.description = QLineEdit(self)
-        description_layout.addWidget(self.description)
-        
+        description_input_layout.addWidget(self.label3)
+
+        self.description_input = QComboBox(self)
+        self.description_input.setEditable(True)
+        description_input_layout.addWidget(self.description_input)
+
+        description_layout.addLayout(description_input_layout)
+
         main_layout.addLayout(description_layout)
 
         # Buttons layout
@@ -99,11 +117,17 @@ class IFCConnector(QMainWindow):
 
         main_layout.addLayout(button_layout)
 
+        # Graph view for connections
+        self.figure = plt.figure()
+        self.canvas = FigureCanvas(self.figure)
+        main_layout.addWidget(self.canvas)
+
         container = QWidget()
         container.setLayout(main_layout)
         self.setCentralWidget(container)
 
-        
+        asyncio.run(self.load_predefined_descriptions())
+
     def open_ifc_file(self):
         options = QFileDialog.Options()
         file_name, _ = QFileDialog.getOpenFileName(self, "Open IFC File", "", "IFC Files (*.ifc);;All Files (*)", options=options)
@@ -116,6 +140,7 @@ class IFCConnector(QMainWindow):
             self.combo1.addItems(elements)
             self.combo2.addItems(elements)
             QMessageBox.information(self, 'Success', f'IFC file loaded: {file_name}')
+            self.update_graph_view()
 
     def list_elements(self):
         return self.ifc_file.by_type("IfcElement")
@@ -131,13 +156,15 @@ class IFCConnector(QMainWindow):
         element1_id = element1_text.split('(')[-1][:-1]
         element2_id = element2_text.split('(')[-1][:-1]
 
-        description = self.description.text()
+        description = self.description_input.currentText()
 
         element1 = self.ifc_file.by_guid(element1_id)
         element2 = self.ifc_file.by_guid(element2_id)
 
         if element1 and element2:
             connect_element(self.ifc_file, element1, element2, description)
+            self.connections.append((element1_text, element2_text, description))
+            self.update_graph_view()
             QMessageBox.information(self, 'Success', 'Elements connected successfully!')
         else:
             QMessageBox.warning(self, 'Error', 'Failed to connect elements.')
@@ -150,12 +177,61 @@ class IFCConnector(QMainWindow):
         directory = os.path.dirname(self.ifc_file_path)
         base_name = os.path.basename(self.ifc_file_path)
         new_file_path = os.path.join(directory, f"modified_{base_name}")
-        
+
         options = QFileDialog.Options()
         file_name, _ = QFileDialog.getSaveFileName(self, "Save IFC File", new_file_path, "IFC Files (*.ifc)", options=options)
         if file_name:
             self.ifc_file.write(file_name)
             QMessageBox.information(self, 'Success', f'IFC file saved as {file_name}')
+
+    async def load_predefined_descriptions(self):
+        url = 'https://api.bsdd.buildingsmart.org/api/Property/v4'
+        params = {
+            'uri': 'https://identifier.buildingsmart.org/uri/LCA/LCA_properties/0.1/prop/ConnectionMethod',
+            'includeClasses': 'true',
+            'languageCode': 'EN'
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    for item in data.get('allowedValues', []):
+                        self.description_input.addItem(item['value'])
+                else:
+                    QMessageBox.warning(self, 'Error', f'Failed to load predefined descriptions: {response.status}')
+
+    def update_graph_view(self):
+        self.figure.clear()
+        G = nx.DiGraph()
+
+        element_positions = {}
+
+        # Only add nodes and edges for connected elements
+        for connection in self.connections:
+            element1_text, element2_text, description = connection
+            element1_id = element1_text.split('(')[-1][:-1]
+            element2_id = element2_text.split('(')[-1][:-1]
+
+            element1 = self.ifc_file.by_guid(element1_id)
+            element2 = self.ifc_file.by_guid(element2_id)
+
+            if element1 and element2:
+                node_label1 = quote_if_colon(f"{element1.Name} ({element1.GlobalId})")
+                node_label2 = quote_if_colon(f"{element2.Name} ({element2.GlobalId})")
+                
+                G.add_node(element1.GlobalId, label=node_label1)
+                G.add_node(element2.GlobalId, label=node_label2)
+                G.add_edge(element1_id, element2_id, label=quote_if_colon(description))
+
+        pos = graphviz_layout(G, prog='dot')
+
+        nx.draw(G, pos, with_labels=True, labels=nx.get_node_attributes(G, 'label'), node_size=3000, node_color='skyblue', font_size=10, font_weight='bold')
+        edge_labels = nx.get_edge_attributes(G, 'label')
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color='red')
+
+        self.canvas.draw()
+
 
 def connect_element(
     file: ifcopenshell.file,
