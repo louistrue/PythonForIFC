@@ -40,5 +40,5 @@ def debug_ifc_file(ifc_file_path):
 
 
 # Provide the path to the IFC file
-ifc_file_path = r'C:\Users\LouisTrümpler\Dropbox\01_Projekte\118_IfcQA.open\10_ARC_Architektur_GN Palettenlager.ifc'
+ifc_file_path = 
 debug_ifc_file(ifc_file_path)
