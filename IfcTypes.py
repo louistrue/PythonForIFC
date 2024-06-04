@@ -82,7 +82,7 @@ def get_entities_with_types(ifc_file_path):
         print(f"An error occurred: {e}")
         return []
 
-ifc_file_path = r'C:\Users\LouisTrümpler\Dropbox\01_Projekte\118_IfcQA.open\10_ARC_Architektur_GN Logistik.ifc'
+ifc_file_path = 
 filtered_entities = get_entities_with_types(ifc_file_path)
 
 # Print the list of entities with their types, global IDs, and names
