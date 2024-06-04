@@ -102,4 +102,4 @@ def debug_file(ifc_file_path):
 debug_file(r'C:\Users\LouisTrümpler\Documents\GitHub\IfcLCA\TestFiles\IFC_testfiles\2x3_CV_2.0 - Copy.ifc')
 
 # Debugging second file
-debug_file(r'C:\Users\LouisTrümpler\Dropbox\01_Projekte\118_IfcQA.open\10_ARC_Architektur_GN Palettenlager.ifc')
+debug_file()
