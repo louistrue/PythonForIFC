@@ -5,6 +5,8 @@ from pathlib import Path
 from ifcopenshell.util.placement import get_local_placement
 import numpy as np
 import math
+import requests
+import webbrowser
 
 def safe_normalize(vector):
     norm = np.linalg.norm(vector)
@@ -50,6 +52,8 @@ def get_ifc_geolocation(file):
     project = file.by_type('IfcProject')[0]
     site = file.by_type('IfcSite')[0]
     map_conversion = file.by_type('IfcMapConversion')
+    projected_crs = file.by_type('IfcProjectedCRS')
+    
     if map_conversion:
         map_conversion = map_conversion[0]
 
@@ -61,6 +65,28 @@ def get_ifc_geolocation(file):
 
     rotation_radians = math.atan2(x_axis_ordinate, x_axis_abscissa) if x_axis_abscissa and x_axis_ordinate else None
     rotation_degrees = radians_to_degrees(rotation_radians) if rotation_radians is not None else None
+
+    crs_info = {}
+    if projected_crs:
+        projected_crs = projected_crs[0]
+        crs_info = {
+            "name": projected_crs.Name,
+            "description": projected_crs.Description,
+            "geodetic_datum": projected_crs.GeodeticDatum,
+            "vertical_datum": projected_crs.VerticalDatum,
+            "map_projection": projected_crs.MapProjection,
+        }
+        
+        # Use an API to look up more details about the CRS
+        if projected_crs.Name:
+            crs_response = requests.get(f"https://epsg.io/{projected_crs.Name}.json")
+            if crs_response.status_code == 200:
+                crs_data = crs_response.json()
+                crs_info.update({
+                    "crs_name": crs_data.get('name'),
+                    "crs_area": crs_data.get('area'),
+                    "crs_bbox": crs_data.get('bbox'),
+                })
 
     return {
         "project_name": project.Name if project.Name else "Undefined",
@@ -81,6 +107,7 @@ def get_ifc_geolocation(file):
             "rotation_degrees": rotation_degrees,
             "scale": map_conversion.Scale if map_conversion else 1.0
         } if map_conversion else "No IfcMapConversion entity found.",
+        "projected_crs": crs_info,
     }
 
 def safe_get_local_placement(product):
@@ -149,6 +176,12 @@ def process_ifc_file(file_path):
     report += "\n--- Unit Conversions ---\n"
     for unit in units_info:
         report += f"Unit Type: {unit['unit_type']}, Unit Name: {unit['unit_name']}, Conversion Factor: {unit['conversion_factor']}\n"
+
+    # Show on OpenStreetMap if coordinates are available
+    if geolocation['ref_lat_decimal'] and geolocation['ref_long_decimal']:
+        osm_url = f"https://www.openstreetmap.org/?mlat={geolocation['ref_lat_decimal']}&mlon={geolocation['ref_long_decimal']}&zoom=15"
+        report += f"\nView on OpenStreetMap: {osm_url}\n"
+        webbrowser.open(osm_url)
     
     return report
 
