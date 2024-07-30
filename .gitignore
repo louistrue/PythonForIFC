@@ -2,3 +2,4 @@
 *.ifc
 **/_ALT/
 *.code-workspace
+venv/
