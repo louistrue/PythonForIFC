@@ -129,7 +129,7 @@ IFCGeolocatorApp/
 
 ## License
 
-This project is licensed under the AGPL3 License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the AGPL3 License - see the License file in root for details.
 
 ## Contributing
 
@@ -137,7 +137,7 @@ Contributions are welcome!
 
 ### Issues
 
-If you find a bug or have a feature request, please create an issue on the [GitHub Issues page](https://github.com/yourusername/IFCGeolocator/issues).
+If you find a bug or have a feature request, please create an issue on the [GitHub Issues page](https://github.com/louistrue/pythonforifc/issues).
 
 ### Pull Requests
 
