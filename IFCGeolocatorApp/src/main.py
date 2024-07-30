@@ -16,26 +16,20 @@ class IFCGeolocatorApp(QMainWindow):
 
         # Initialize IFC Handler and Map Viewer
         self.ifc_handler = IFCHandler()
-        self.map_viewer = MapViewer(self.ui.map_viewer)
+        self.map_viewer = MapViewer(self.ui.map_viewer, self.ifc_handler.api_key)
         self.ui.main_layout.addWidget(self.map_viewer)
 
-        # Initialize coordinates for zooming
-        self.site_coords = None
-        self.map_conversion_coords = None
-
-        # Set up menu actions
+        # Set up menu actions and initial file load
         self.create_actions()
         self.create_menus()
+        self.load_ifc_files()  # Prompt for file selection on startup
 
         # Connect signals and slots
         self.ui.tab_widget.currentChanged.connect(self.display_ifc_info)
-
-        # Make cards clickable
         self.ui.site_info_group.mouseReleaseEvent = self.on_site_info_clicked
         self.ui.map_conversion_info_group.mouseReleaseEvent = self.on_map_conversion_info_clicked
 
     def create_actions(self):
-        # Create actions for the File menu
         self.load_action = QAction("Load IFC Files", self)
         self.load_action.triggered.connect(self.load_ifc_files)
 
@@ -43,17 +37,14 @@ class IFCGeolocatorApp(QMainWindow):
         self.export_action.triggered.connect(self.export_to_pdf)
 
     def create_menus(self):
-        # Create the menubar and add the File menu
         menubar = self.menuBar()
         file_menu = menubar.addMenu("File")
         file_menu.addAction(self.load_action)
         file_menu.addAction(self.export_action)
 
     def load_ifc_files(self):
-        print("Load IFC Files clicked")
         options = QFileDialog.Options()
         file_paths, _ = QFileDialog.getOpenFileNames(self, "Open IFC Files", "", "IFC Files (*.ifc);;All Files (*)", options=options)
-        print(f"Files selected: {file_paths}")
         if file_paths:
             for file_path in file_paths:
                 ifc_file = self.ifc_handler.load_ifc_file(file_path)
@@ -64,37 +55,27 @@ class IFCGeolocatorApp(QMainWindow):
                     layout.addWidget(file_label)
                     self.ui.tab_widget.addTab(tab_content, os.path.basename(file_path))
 
-            # Automatically select and display the first file
             self.ui.tab_widget.setCurrentIndex(0)
             self.display_ifc_info()
 
     def export_to_pdf(self):
         print("Export to PDF clicked")
-        # Implement PDF export functionality here
-        # For now, just show a message or print a log
         print("PDF export functionality is not implemented yet.")
 
     def display_ifc_info(self):
-        print("Displaying IFC info")
         current_index = self.ui.tab_widget.currentIndex()
         if current_index != -1:
             tab = self.ui.tab_widget.widget(current_index)
             file_path = tab.layout().itemAt(0).widget().text()
-            print(f"Selected file: {file_path}")
             ifc_file = self.ifc_handler.ifc_files.get(file_path)
             if ifc_file:
                 project_info = self.ifc_handler.get_project_info(ifc_file)
                 site_info = self.ifc_handler.get_site_info(ifc_file)
                 map_conversion_info = self.ifc_handler.get_map_conversion_info(ifc_file)
 
-                print(f"Project Info: {project_info}")
-                print(f"Site Info: {site_info}")
-                print(f"Map Conversion Info: {map_conversion_info}")
-
                 self.site_coords = site_info
                 self.map_conversion_coords = map_conversion_info
 
-                # Update UI with project and site info
                 self.ui.site_info_label.setText(
                     f"Project Name: {project_info['name']}\n"
                     f"Reference Latitude (DMS): {site_info['ref_lat_dms']}\n"
@@ -105,7 +86,11 @@ class IFCGeolocatorApp(QMainWindow):
                 )
 
                 if map_conversion_info:
+                    epsg_info = map_conversion_info.get('epsg_info', {})
+                    epsg_name = epsg_info.get('name', 'N/A') if epsg_info else 'N/A'
                     self.ui.map_conversion_info_label.setText(
+                        f"EPSG Code: {map_conversion_info['epsg_code']}\n"
+                        f"EPSG Name: {epsg_name}\n"
                         f"Eastings: {map_conversion_info['eastings']} meters\n"
                         f"Northings: {map_conversion_info['northings']} meters\n"
                         f"Orthogonal Height: {map_conversion_info['orthogonal_height']} meters\n"
@@ -128,11 +113,25 @@ class IFCGeolocatorApp(QMainWindow):
     def on_map_conversion_info_clicked(self, event):
         print("Map conversion info clicked")
         if self.map_conversion_coords:
-            print(f"Setting map view to map conversion coordinates: {self.map_conversion_coords['eastings']}, {self.map_conversion_coords['northings']}")
-            self.map_viewer.setView(self.map_conversion_coords['eastings'], self.map_conversion_coords['northings'], 18)
+            eastings = self.map_conversion_coords['eastings']
+            northings = self.map_conversion_coords['northings']
+            rotation = self.map_conversion_coords.get('rotation_degrees', 0)
+            scale = self.map_conversion_coords.get('scale', 1.0)
+            epsg_code = self.map_conversion_coords['epsg_code']
+            transformation_code = self.map_conversion_coords.get('transformation_code', None)
+            
+            # Get the largest coordinates
+            largest_coords = self.ifc_handler.get_largest_coordinates(self.ifc_handler.current_file)
+            
+            print(f"Setting map view to map conversion coordinates: {eastings}, {northings}")
+
             self.map_viewer.clearMarkers()
-            self.map_viewer.addMarker(self.map_conversion_coords['eastings'], self.map_conversion_coords['northings'], "Map Conversion Coordinates")
-            self.map_viewer.addCoordinateAxes(self.map_conversion_coords['x_axis_abscissa'], self.map_conversion_coords['x_axis_ordinate'])
+            self.map_viewer.applyMapConversion(
+                eastings, northings, rotation, scale, 
+                self.site_coords['ref_lat_decimal'], self.site_coords['ref_long_decimal'], 
+                epsg_code, transformation_code, largest_coords
+            )
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
