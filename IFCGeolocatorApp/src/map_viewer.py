@@ -1,10 +1,9 @@
-# map_viewer.py
-
 import os
 import json
 import math
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QUrl
+from PyQt5.QtWebChannel import QWebChannel
 from pyproj import Transformer, CRS
 import requests
 
@@ -16,13 +15,17 @@ class MapViewer(QWebEngineView):
         self.default_latitude = 0.0
         self.default_longitude = 0.0
         self.default_zoom_level = 2
-        self.map_initialized = False
         self.api_key = api_key  # Store the API key
         self.markers = []  # Store markers for later use
 
         # Check if the HTML template exists
         self.check_html_template()
         self.load_default_map()
+
+        # Set up the WebChannel for communication with JavaScript
+        self.channel = QWebChannel()
+        self.channel.registerObject('pyObj', self)
+        self.page().setWebChannel(self.channel)
 
     def check_html_template(self):
         if not os.path.exists(self.html_template_path):
@@ -49,17 +52,40 @@ class MapViewer(QWebEngineView):
             'zoom': zoom
         }
 
-        print(f"Map settings to be used: {map_settings}")
-
         with open(self.html_template_path, 'r') as file:
             map_html = file.read()
 
-        # Replace placeholder with actual JSON string
         map_html = map_html.replace('<!-- MAP_SETTINGS -->', json.dumps(map_settings))
-
-        print("Map HTML with settings loaded, setting HTML to view...")
         self.setHtml(map_html, QUrl.fromLocalFile(self.html_template_path))
         self.map_initialized = True
+
+    def setSiteView(self):
+        print("Setting site view...")
+        # Replace with the actual logic to set the site view
+        self.page().runJavaScript("setMapView(51.505, -0.09, 13);")
+
+    def setConvertedView(self):
+        print("Setting converted view...")
+        # Replace with the actual logic to set the converted view
+        self.page().runJavaScript("setMapView(40.7128, -74.0060, 13);")
+
+    def setOriginView(self):
+        print("Setting origin view...")
+        # Replace with the actual logic to set the origin view
+        self.page().runJavaScript("setMapView(48.8566, 2.3522, 13);")
+
+    def fitBoundsToAllMarkers(self):
+        print("Fitting bounds to all markers")
+        self.page().runJavaScript("fitBoundsToAllMarkers();")
+
+    def addMarker(self, latitude, longitude, label):
+        print(f"Adding marker at lat: {latitude}, long: {longitude} with label: {label}")
+        self.page().runJavaScript(f"addMarker({latitude}, {longitude}, '{label}');")
+
+    def clearMarkers(self):
+        print("Clearing all markers...")
+        self.page().runJavaScript("clearMarkers();")
+        self.markers.clear()
 
     def fetch_origin_offset(self, epsg_code, transformation_code):
         try:
@@ -120,23 +146,6 @@ class MapViewer(QWebEngineView):
         self.page().runJavaScript(f"""
             map.setView([{latitude}, {longitude}], {zoom});
         """)
-
-    def fitBoundsToAllMarkers(self):
-        print("Fitting bounds to all markers")
-        self.page().runJavaScript("fitBoundsToAllMarkers();")
-
-    def addMarker(self, latitude, longitude, label, icon='default'):
-        print(f"Adding marker at lat: {latitude}, long: {longitude} with label: {label}")
-        self.markers.append((latitude, longitude))
-        self.page().runJavaScript(f"""
-            var marker = L.marker([{latitude}, {longitude}]).addTo(map);
-            marker.bindPopup("{label}");
-        """)
-
-    def clearMarkers(self):
-        print("Clearing all markers...")
-        self.page().runJavaScript("map.eachLayer(function (layer) { if(layer instanceof L.Marker) { map.removeLayer(layer); } });")
-        self.markers.clear()
 
     def addCoordinateAxes(self, x_abscissa, x_ordinate):
         print(f"Adding coordinate axes with x_abscissa={x_abscissa}, x_ordinate={x_ordinate}")

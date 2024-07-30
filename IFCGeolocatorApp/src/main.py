@@ -7,6 +7,7 @@ from PyQt5.QtCore import QUrl
 from src.ui_main import MainWindow
 from src.ifc_handler import IFCHandler
 from src.map_viewer import MapViewer
+
 class IFCGeolocatorApp(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -27,9 +28,6 @@ class IFCGeolocatorApp(QMainWindow):
         self.ui.tab_widget.currentChanged.connect(self.display_ifc_info)
         self.ui.site_info_group.mouseReleaseEvent = self.on_site_info_clicked
         self.ui.map_conversion_info_group.mouseReleaseEvent = self.on_map_conversion_info_clicked
-
-        # Add zoom buttons
-        self.add_zoom_controls()
 
     def create_actions(self):
         self.load_action = QAction("Load IFC Files", self)
@@ -85,6 +83,7 @@ class IFCGeolocatorApp(QMainWindow):
                     f"Reference Latitude (Decimal Degrees): {site_info['ref_lat_decimal']}\n"
                     f"Reference Longitude (Decimal Degrees): {site_info['ref_long_decimal']}\n"
                     f"Reference Elevation: {site_info['ref_elevation']} meters\n"
+                    f"largest Coordinates: {self.ifc_handler.get_largest_coordinates(ifc_file)}\n"
                 )
 
                 if map_conversion_info:
@@ -93,8 +92,9 @@ class IFCGeolocatorApp(QMainWindow):
                     self.ui.map_conversion_info_label.setText(
                         f"EPSG Code: {map_conversion_info['epsg_code']}\n"
                         f"EPSG Name: {epsg_name}\n"
-                        f"Eastings: {map_conversion_info['eastings']} meters\n"
-                        f"Northings: {map_conversion_info['northings']} meters\n"
+                        f"Transformation Code: {map_conversion_info['transformation_code']}\n"
+                        f"Eastings: {map_conversion_info['eastings']}\n"
+                        f"Northings: {map_conversion_info['northings']}\n"
                         f"Orthogonal Height: {map_conversion_info['orthogonal_height']} meters\n"
                         f"X Axis Abscissa: {map_conversion_info['x_axis_abscissa']}\n"
                         f"X Axis Ordinate: {map_conversion_info['x_axis_ordinate']}\n"
@@ -103,25 +103,6 @@ class IFCGeolocatorApp(QMainWindow):
                     )
                 else:
                     self.ui.map_conversion_info_label.setText("No map conversion data available.")
-
-    def add_zoom_controls(self):
-        # Add buttons to zoom to specific points or all markers
-        self.zoom_to_site_button = QPushButton("Zoom to Site", self)
-        self.zoom_to_site_button.clicked.connect(self.zoom_to_site)
-
-        self.zoom_to_converted_button = QPushButton("Zoom to Converted", self)
-        self.zoom_to_converted_button.clicked.connect(self.zoom_to_converted)
-
-        self.zoom_to_origin_button = QPushButton("Zoom to Origin", self)
-        self.zoom_to_origin_button.clicked.connect(self.zoom_to_origin)
-
-        self.zoom_to_all_button = QPushButton("Zoom to All", self)
-        self.zoom_to_all_button.clicked.connect(self.zoom_to_all)
-
-        self.ui.main_layout.addWidget(self.zoom_to_site_button)
-        self.ui.main_layout.addWidget(self.zoom_to_converted_button)
-        self.ui.main_layout.addWidget(self.zoom_to_origin_button)
-        self.ui.main_layout.addWidget(self.zoom_to_all_button)
 
     def zoom_to_site(self):
         if self.site_coords:

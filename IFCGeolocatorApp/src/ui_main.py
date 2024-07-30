@@ -29,7 +29,7 @@ class MainWindow(QMainWindow):
         self.info_panel = QFrame(self.central_widget)
         self.info_layout = QHBoxLayout(self.info_panel)
         self.info_panel.setMinimumHeight(50)
-        self.info_panel.setMaximumHeight(200)
+        self.info_panel.setMaximumHeight(250)
 
         self.site_info_group = QGroupBox("Site Coordinates", self.central_widget)
         self.site_info_label = QLabel("No site data available.", self.site_info_group)
