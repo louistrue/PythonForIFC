@@ -1,35 +1,27 @@
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QFileDialog, QLabel, QVBoxLayout, QWidget, QAction
-from PyQt5.QtCore import QUrl
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QVBoxLayout, QWidget, QAction, QRadioButton, QLabel, QHBoxLayout
 from src.ui_main import MainWindow
 from src.ifc_handler import IFCHandler
 from src.map_viewer import MapViewer
+
 class IFCGeolocatorApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.ui = MainWindow()
         self.ui.setupUi(self)
 
-        # Initialize IFC Handler and Map Viewer
         self.ifc_handler = IFCHandler()
-        self.map_viewer = MapViewer(self.ui.map_viewer, self.ifc_handler.api_key)
+        self.map_viewer = MapViewer(self.ui.map_viewer)
         self.ui.main_layout.addWidget(self.map_viewer)
 
-        # Set up menu actions and initial file load
         self.create_actions()
         self.create_menus()
-        self.load_ifc_files()  # Prompt for file selection on startup
+        self.load_ifc_files()
 
-        # Connect signals and slots
         self.ui.tab_widget.currentChanged.connect(self.display_ifc_info)
-        self.ui.site_info_group.mouseReleaseEvent = self.on_site_info_clicked
-        self.ui.map_conversion_info_group.mouseReleaseEvent = self.on_map_conversion_info_clicked
-
-        # Add zoom buttons
-        self.add_zoom_controls()
+        self.add_view_controls()
 
     def create_actions(self):
         self.load_action = QAction("Load IFC Files", self)
@@ -104,24 +96,36 @@ class IFCGeolocatorApp(QMainWindow):
                 else:
                     self.ui.map_conversion_info_label.setText("No map conversion data available.")
 
-    def add_zoom_controls(self):
-        # Add buttons to zoom to specific points or all markers
-        self.zoom_to_site_button = QPushButton("Zoom to Site", self)
-        self.zoom_to_site_button.clicked.connect(self.zoom_to_site)
+    def add_view_controls(self):
+        # Add radio buttons to switch between views
+        self.view_controls_layout = QHBoxLayout()
 
-        self.zoom_to_converted_button = QPushButton("Zoom to Converted", self)
-        self.zoom_to_converted_button.clicked.connect(self.zoom_to_converted)
+        self.radio_site = QRadioButton("Site")
+        self.radio_converted = QRadioButton("Converted")
+        self.radio_origin = QRadioButton("Origin")
+        self.radio_all = QRadioButton("All")
 
-        self.zoom_to_origin_button = QPushButton("Zoom to Origin", self)
-        self.zoom_to_origin_button.clicked.connect(self.zoom_to_origin)
+        self.radio_site.toggled.connect(lambda: self.on_view_toggled("site"))
+        self.radio_converted.toggled.connect(lambda: self.on_view_toggled("converted"))
+        self.radio_origin.toggled.connect(lambda: self.on_view_toggled("origin"))
+        self.radio_all.toggled.connect(lambda: self.on_view_toggled("all"))
 
-        self.zoom_to_all_button = QPushButton("Zoom to All", self)
-        self.zoom_to_all_button.clicked.connect(self.zoom_to_all)
+        self.view_controls_layout.addWidget(self.radio_site)
+        self.view_controls_layout.addWidget(self.radio_converted)
+        self.view_controls_layout.addWidget(self.radio_origin)
+        self.view_controls_layout.addWidget(self.radio_all)
 
-        self.ui.main_layout.addWidget(self.zoom_to_site_button)
-        self.ui.main_layout.addWidget(self.zoom_to_converted_button)
-        self.ui.main_layout.addWidget(self.zoom_to_origin_button)
-        self.ui.main_layout.addWidget(self.zoom_to_all_button)
+        self.ui.main_layout.addLayout(self.view_controls_layout)
+
+    def on_view_toggled(self, view_type):
+        if view_type == "site" and self.radio_site.isChecked():
+            self.zoom_to_site()
+        elif view_type == "converted" and self.radio_converted.isChecked():
+            self.zoom_to_converted()
+        elif view_type == "origin" and self.radio_origin.isChecked():
+            self.zoom_to_origin()
+        elif view_type == "all" and self.radio_all.isChecked():
+            self.zoom_to_all()
 
     def zoom_to_site(self):
         if self.site_coords:
@@ -145,39 +149,9 @@ class IFCGeolocatorApp(QMainWindow):
     def zoom_to_all(self):
         self.map_viewer.fitBoundsToAllMarkers()
 
-    def on_site_info_clicked(self, event):
-        print("Site info clicked")
-        if self.site_coords:
-            print(f"Setting map view to site coordinates: {self.site_coords['ref_lat_decimal']}, {self.site_coords['ref_long_decimal']}")
-            self.map_viewer.setView(self.site_coords['ref_lat_decimal'], self.site_coords['ref_long_decimal'], 18)
-            self.map_viewer.clearMarkers()
-            self.map_viewer.addMarker(self.site_coords['ref_lat_decimal'], self.site_coords['ref_long_decimal'], "Site Coordinates")
-
-    def on_map_conversion_info_clicked(self, event):
-        print("Map conversion info clicked")
-        if self.map_conversion_coords:
-            eastings = self.map_conversion_coords['eastings']
-            northings = self.map_conversion_coords['northings']
-            rotation = self.map_conversion_coords.get('rotation_degrees', 0)
-            scale = self.map_conversion_coords.get('scale', 1.0)
-            epsg_code = self.map_conversion_coords['epsg_code']
-            transformation_code = self.map_conversion_coords.get('transformation_code', None)
-            
-            # Get the largest coordinates
-            largest_coords = self.ifc_handler.get_largest_coordinates(self.ifc_handler.current_file)
-            
-            print(f"Setting map view to map conversion coordinates: {eastings}, {northings}")
-
-            self.map_viewer.clearMarkers()
-            self.map_viewer.applyMapConversion(
-                eastings, northings, rotation, scale, 
-                self.site_coords['ref_lat_decimal'], self.site_coords['ref_long_decimal'], 
-                epsg_code, transformation_code, largest_coords
-            )
-
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = IFCGeolocatorApp()
     window.show()
     sys.exit(app.exec_())
+

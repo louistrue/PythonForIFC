@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenStreetMap with Leaflet</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+      #map {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+      var map = L.map("map").setView([51.505, -0.09], 13);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map);
+
+      var markers = [];
+
+      function addMarker(lat, lng, label) {
+        var marker = L.marker([lat, lng]).addTo(map);
+        marker.bindPopup(label).openPopup();
+        markers.push(marker);
+      }
+
+      function clearMarkers() {
+        markers.forEach((marker) => map.removeLayer(marker));
+        markers = [];
+      }
+
+      function fitBoundsToAllMarkers() {
+        if (markers.length === 0) return;
+        var bounds = L.latLngBounds(
+          markers.map((marker) => marker.getLatLng())
+        );
+        map.fitBounds(bounds);
+      }
+
+      function setMapView(lat, lng, zoom) {
+        map.setView([lat, lng], zoom);
+      }
+    </script>
+  </body>
+</html>

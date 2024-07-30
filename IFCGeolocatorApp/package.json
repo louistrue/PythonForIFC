@@ -1,0 +1,19 @@
+{
+  "name": "ifcgeolocatorapp",
+  "version": "1.0.0",
+  "description": "IFC Geolocator is a PyQt5-based application that provides geolocation and map visualization capabilities for IFC (Industry Foundation Classes) files. The application allows users to load multiple IFC files, view detailed project and site information, and visualize the data on a map using Leaflet.js.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@maptiler/sdk": "^2.2.1"
+  }
+}

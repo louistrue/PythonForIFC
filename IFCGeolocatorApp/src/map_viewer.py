@@ -1,38 +1,49 @@
-# map_viewer.py
-
 import os
 import json
-import math
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QUrl, QObject, pyqtSlot
+from PyQt5.QtWebChannel import QWebChannel
 from pyproj import Transformer, CRS
 import requests
+from dotenv import load_dotenv
 
 class MapViewer(QWebEngineView):
-    def __init__(self, parent=None, api_key=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Map Viewer")
-        self.html_template_path = os.path.join(os.path.dirname(__file__), '..', 'resources', 'templates', 'map_template.html')
-        self.default_latitude = 0.0
-        self.default_longitude = 0.0
-        self.default_zoom_level = 2
-        self.map_initialized = False
-        self.api_key = api_key  # Store the API key
-        self.markers = []  # Store markers for later use
 
-        # Check if the HTML template exists
-        self.check_html_template()
+        # Load environment variables
+        load_dotenv()
+        self.html_template_path = os.path.join(os.path.dirname(__file__), '..', 'resources', 'templates', 'osm_map_template.html')
+        
         self.load_default_map()
-
-    def check_html_template(self):
-        if not os.path.exists(self.html_template_path):
-            print(f"Error: HTML template file does not exist at {self.html_template_path}")
-        else:
-            print(f"HTML template path set to: {self.html_template_path}")
 
     def load_default_map(self):
         print("Loading default map...")
-        self.loadMap(self.default_latitude, self.default_longitude, self.default_zoom_level)
+        if os.path.exists(self.html_template_path):
+            with open(self.html_template_path, 'r') as file:
+                map_html = file.read()
+
+            self.setHtml(map_html, QUrl.fromLocalFile(self.html_template_path))
+            print("HTML template loaded.")
+        else:
+            print(f"Error: HTML template file does not exist at {self.html_template_path}")
+
+    def setHtmlFromFile(self):
+        if os.path.exists(self.html_template_path):
+            with open(self.html_template_path, 'r') as file:
+                map_html = file.read()
+            
+            # Inject API key into the HTML
+            map_html = map_html.replace('YOUR_MAPTILER_API_KEY_HERE', self.api_key)
+
+            self.setHtml(map_html, QUrl.fromLocalFile(self.html_template_path))
+            print("HTML template set with MapTiler API key.")
+        else:
+            print(f"Error: HTML template file does not exist at {self.html_template_path}")
+
+    def send_to_js(self, data):
+        self.page().runJavaScript(f"jsFunction({json.dumps(data)});")
 
     def loadMap(self, latitude=None, longitude=None, zoom=None):
         print(f"Loading map with latitude={latitude}, longitude={longitude}, zoom={zoom}")
@@ -118,26 +129,24 @@ class MapViewer(QWebEngineView):
     def setView(self, latitude, longitude, zoom):
         print(f"Setting view to lat: {latitude}, long: {longitude}, zoom: {zoom}")
         self.page().runJavaScript(f"""
-            map.setView([{latitude}, {longitude}], {zoom});
+            setMapView({latitude}, {longitude}, {zoom});
         """)
 
     def fitBoundsToAllMarkers(self):
         print("Fitting bounds to all markers")
         self.page().runJavaScript("fitBoundsToAllMarkers();")
 
-    def addMarker(self, latitude, longitude, label, icon='default'):
+    def setMapView(self, latitude, longitude, zoom):
+        print(f"Setting view to lat: {latitude}, long: {longitude}, zoom: {zoom}")
+        self.page().runJavaScript(f"setMapView({latitude}, {longitude}, {zoom});")
+
+    def addMarker(self, latitude, longitude, label):
         print(f"Adding marker at lat: {latitude}, long: {longitude} with label: {label}")
-        self.markers.append((latitude, longitude))
-        self.page().runJavaScript(f"""
-            var marker = L.marker([{latitude}, {longitude}]).addTo(map);
-            marker.bindPopup("{label}");
-        """)
+        self.page().runJavaScript(f"addMarker({latitude}, {longitude}, {label});")
 
     def clearMarkers(self):
         print("Clearing all markers...")
-        self.page().runJavaScript("map.eachLayer(function (layer) { if(layer instanceof L.Marker) { map.removeLayer(layer); } });")
-        self.markers.clear()
-
+        self.page().runJavaScript("clearMarkers();")
     def addCoordinateAxes(self, x_abscissa, x_ordinate):
         print(f"Adding coordinate axes with x_abscissa={x_abscissa}, x_ordinate={x_ordinate}")
         self.page().runJavaScript(f"""
