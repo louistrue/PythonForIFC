@@ -2,12 +2,11 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QLabel, QVBoxLayout, QWidget, QAction
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QFileDialog, QLabel, QVBoxLayout, QWidget, QAction
 from PyQt5.QtCore import QUrl
 from src.ui_main import MainWindow
 from src.ifc_handler import IFCHandler
 from src.map_viewer import MapViewer
-
 class IFCGeolocatorApp(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -28,6 +27,9 @@ class IFCGeolocatorApp(QMainWindow):
         self.ui.tab_widget.currentChanged.connect(self.display_ifc_info)
         self.ui.site_info_group.mouseReleaseEvent = self.on_site_info_clicked
         self.ui.map_conversion_info_group.mouseReleaseEvent = self.on_map_conversion_info_clicked
+
+        # Add zoom buttons
+        self.add_zoom_controls()
 
     def create_actions(self):
         self.load_action = QAction("Load IFC Files", self)
@@ -101,6 +103,47 @@ class IFCGeolocatorApp(QMainWindow):
                     )
                 else:
                     self.ui.map_conversion_info_label.setText("No map conversion data available.")
+
+    def add_zoom_controls(self):
+        # Add buttons to zoom to specific points or all markers
+        self.zoom_to_site_button = QPushButton("Zoom to Site", self)
+        self.zoom_to_site_button.clicked.connect(self.zoom_to_site)
+
+        self.zoom_to_converted_button = QPushButton("Zoom to Converted", self)
+        self.zoom_to_converted_button.clicked.connect(self.zoom_to_converted)
+
+        self.zoom_to_origin_button = QPushButton("Zoom to Origin", self)
+        self.zoom_to_origin_button.clicked.connect(self.zoom_to_origin)
+
+        self.zoom_to_all_button = QPushButton("Zoom to All", self)
+        self.zoom_to_all_button.clicked.connect(self.zoom_to_all)
+
+        self.ui.main_layout.addWidget(self.zoom_to_site_button)
+        self.ui.main_layout.addWidget(self.zoom_to_converted_button)
+        self.ui.main_layout.addWidget(self.zoom_to_origin_button)
+        self.ui.main_layout.addWidget(self.zoom_to_all_button)
+
+    def zoom_to_site(self):
+        if self.site_coords:
+            lat = self.site_coords.get('ref_lat_decimal', 0)
+            long = self.site_coords.get('ref_long_decimal', 0)
+            self.map_viewer.setView(lat, long, 18)
+
+    def zoom_to_converted(self):
+        if self.map_conversion_coords:
+            lat = self.map_conversion_coords.get('eastings', 0)
+            long = self.map_conversion_coords.get('northings', 0)
+            self.map_viewer.setView(lat, long, 18)
+
+    def zoom_to_origin(self):
+        if self.map_conversion_coords:
+            epsg_code = self.map_conversion_coords.get('epsg_code', 0)
+            transformation_code = self.map_conversion_coords.get('transformation_code', 0)
+            origin_lat, origin_long = self.map_viewer.fetch_origin_offset(epsg_code, transformation_code)
+            self.map_viewer.setView(origin_lat, origin_long, 18)
+
+    def zoom_to_all(self):
+        self.map_viewer.fitBoundsToAllMarkers()
 
     def on_site_info_clicked(self, event):
         print("Site info clicked")

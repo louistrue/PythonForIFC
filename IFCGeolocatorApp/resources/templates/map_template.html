@@ -16,76 +16,61 @@
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-      // Define the map settings directly in the template
-      var mapSettings = {
-        latitude: 0.0,
-        longitude: 0.0,
-        zoom: 2,
-      };
-
+      var mapSettings = { latitude: 0.0, longitude: 0.0, zoom: 2 };
       console.log("Map Settings:", mapSettings);
 
-      try {
-        // Ensure that Leaflet library is loaded
-        if (typeof L === "undefined") {
-          throw new Error("Leaflet library is not loaded.");
+      var map = L.map("map").setView(
+        [mapSettings.latitude, mapSettings.longitude],
+        mapSettings.zoom
+      );
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+      }).addTo(map);
+
+      window.setMapView = function (lat, lng, zoom) {
+        console.log("Setting map view to:", lat, lng, "with zoom level:", zoom);
+        if (map) {
+          map.setView([lat, lng], zoom);
+        } else {
+          console.error("Map object is not defined.");
         }
+      };
 
-        // Initialize the map object
-        var map = L.map("map").setView(
-          [mapSettings.latitude, mapSettings.longitude],
-          mapSettings.zoom
-        );
-        console.log("Map initialized:", map);
+      window.addMarker = function (lat, lng, label) {
+        console.log("Adding marker at:", lat, lng, "with label:", label);
+        if (map) {
+          var marker = L.marker([lat, lng]).addTo(map);
+          marker.bindPopup(label);
+        } else {
+          console.error("Map object is not defined.");
+        }
+      };
 
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-        }).addTo(map);
-        console.log("Tile layer added to map");
+      window.clearMarkers = function () {
+        console.log("Clearing all markers...");
+        if (map) {
+          map.eachLayer(function (layer) {
+            if (layer instanceof L.Marker) {
+              map.removeLayer(layer);
+            }
+          });
+        } else {
+          console.error("Map object is not defined.");
+        }
+      };
 
-        // Define function to set map view
-        window.setMapView = function (lat, lng, zoom) {
-          console.log(
-            "Setting map view to:",
-            lat,
-            lng,
-            "with zoom level:",
-            zoom
-          );
-          if (map) {
-            map.setView([lat, lng], zoom);
-          } else {
-            console.error("Map object is not defined.");
+      window.fitBoundsToAllMarkers = function () {
+        console.log("Fitting bounds to all markers...");
+        var bounds = [];
+        map.eachLayer(function (layer) {
+          if (layer instanceof L.Marker) {
+            bounds.push(layer.getLatLng());
           }
-        };
-
-        // Define function to add a marker
-        window.addMarker = function (lat, lng, label) {
-          console.log("Adding marker at:", lat, lng, "with label:", label);
-          if (map) {
-            var marker = L.marker([lat, lng]).addTo(map);
-            marker.bindPopup(label);
-          } else {
-            console.error("Map object is not defined.");
-          }
-        };
-
-        // Define function to clear markers
-        window.clearMarkers = function () {
-          console.log("Clearing all markers...");
-          if (map) {
-            map.eachLayer(function (layer) {
-              if (layer instanceof L.Marker) {
-                map.removeLayer(layer);
-              }
-            });
-          } else {
-            console.error("Map object is not defined.");
-          }
-        };
-      } catch (e) {
-        console.error("Error initializing map:", e);
-      }
+        });
+        if (bounds.length > 0) {
+          map.fitBounds(bounds);
+        }
+      };
     </script>
   </body>
 </html>

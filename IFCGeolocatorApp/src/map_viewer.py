@@ -1,3 +1,5 @@
+# map_viewer.py
+
 import os
 import json
 import math
@@ -16,6 +18,7 @@ class MapViewer(QWebEngineView):
         self.default_zoom_level = 2
         self.map_initialized = False
         self.api_key = api_key  # Store the API key
+        self.markers = []  # Store markers for later use
 
         # Check if the HTML template exists
         self.check_html_template()
@@ -62,12 +65,8 @@ class MapViewer(QWebEngineView):
         try:
             url = f"https://api.maptiler.com/coordinates/transform/0,0.json?key={self.api_key}&s_srs={epsg_code}&t_srs=4326&ops={transformation_code}"
             response = requests.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                if data['results']:
-                    return data['results'][0]['y'], data['results'][0]['x']  # Lat, Long
-            else:
-                print(f"Failed to fetch origin offset for EPSG:{epsg_code}: {response.status_code}")
+            if (data := response.json()).get('results'):
+                return data['results'][0]['y'], data['results'][0]['x']  # Lat, Long
         except Exception as e:
             print(f"Exception occurred while fetching origin offset for EPSG:{epsg_code}: {e}")
         return 0.0, 0.0
@@ -86,16 +85,10 @@ class MapViewer(QWebEngineView):
             transformer = Transformer.from_crs(crs_src, crs_dst, always_xy=True)
             wgs84_long, wgs84_lat = transformer.transform(eastings, northings)
 
-
-
-            rotation_radians = math.radians(rotation_degrees)
-            final_lat = wgs84_lat
-            final_long = wgs84_long 
-
             # Ensure the longitude wraps correctly
-            final_long = (final_long + 180) % 360 - 180
+            final_long = (wgs84_long + 180) % 360 - 180
 
-            print(f"Converted Coordinates: lat={final_lat}, long={final_long}")
+            print(f"Converted Coordinates: lat={wgs84_lat}, long={final_long}")
 
             # Set markers and calculate bounding box
             if ref_lat is not None and ref_long is not None:
@@ -103,34 +96,21 @@ class MapViewer(QWebEngineView):
             else:
                 print("Reference site coordinates are not available.")
 
-            self.addMarker(final_lat, final_long, "Converted Coordinates")
+            self.addMarker(wgs84_lat, final_long, "Converted Coordinates")
 
             # Marker for the origin coordinates
             self.addMarker(origin_lat, origin_long, "MapConversion Origin")
 
             if largest_coords:
                 try:
-                    largest_x, largest_y, largest_z = largest_coords
+                    largest_x, largest_y, _ = largest_coords
                     largest_long, largest_lat = transformer.transform(largest_x, largest_y)
-                    largest_lat *= scale
-                    largest_long *= scale
-                    largest_lat = largest_lat * math.cos(rotation_radians) - largest_long * math.sin(rotation_radians) + origin_lat
-                    largest_long = largest_lat * math.sin(rotation_radians) + largest_long * math.cos(rotation_radians) + origin_long
-
-                    # Ensure the longitude wraps correctly
-                    largest_long = (largest_long + 180) % 360 - 180
-
                     self.addMarker(largest_lat, largest_long, "Largest Coordinate")
                 except Exception as e:
                     print(f"Error calculating largest coordinates: {e}")
 
-            # Handle None values in fitBounds gracefully
-            if ref_lat is None or ref_long is None:
-                ref_lat, ref_long = final_lat, final_long
-
             # Adjust the bounds to include all markers
-            self.fitBounds(min(origin_lat, final_lat), min(origin_long, final_long),
-                           max(origin_lat, final_lat), max(origin_long, final_long))
+            self.fitBoundsToAllMarkers()
 
         except Exception as e:
             print(f"Error applying map conversion: {e}")
@@ -141,24 +121,13 @@ class MapViewer(QWebEngineView):
             map.setView([{latitude}, {longitude}], {zoom});
         """)
 
-    def fitBounds(self, lat1, long1, lat2, long2):
-        min_lat = min(lat1, lat2)
-        max_lat = max(lat1, lat2)
-        min_long = min(long1, long2)
-        max_long = max(long1, long2)
-
-        print(f"Fitting bounds to: [{min_lat}, {min_long}], [{max_lat}, {max_long}]")
-
-        self.page().runJavaScript(f"""
-            var bounds = L.latLngBounds(
-                [{min_lat}, {min_long}],
-                [{max_lat}, {max_long}]
-            );
-            map.fitBounds(bounds);
-        """)
+    def fitBoundsToAllMarkers(self):
+        print("Fitting bounds to all markers")
+        self.page().runJavaScript("fitBoundsToAllMarkers();")
 
     def addMarker(self, latitude, longitude, label, icon='default'):
         print(f"Adding marker at lat: {latitude}, long: {longitude} with label: {label}")
+        self.markers.append((latitude, longitude))
         self.page().runJavaScript(f"""
             var marker = L.marker([{latitude}, {longitude}]).addTo(map);
             marker.bindPopup("{label}");
@@ -167,6 +136,7 @@ class MapViewer(QWebEngineView):
     def clearMarkers(self):
         print("Clearing all markers...")
         self.page().runJavaScript("map.eachLayer(function (layer) { if(layer instanceof L.Marker) { map.removeLayer(layer); } });")
+        self.markers.clear()
 
     def addCoordinateAxes(self, x_abscissa, x_ordinate):
         print(f"Adding coordinate axes with x_abscissa={x_abscissa}, x_ordinate={x_ordinate}")
@@ -176,3 +146,4 @@ class MapViewer(QWebEngineView):
             L.marker([{x_abscissa}, {x_ordinate}]).addTo(map).bindTooltip("X Axis", {{permanent: true, direction: 'right'}});
             L.marker([{-x_ordinate}, {x_abscissa}]).addTo(map).bindTooltip("Y Axis", {{permanent: true, direction: 'top'}});
         """)
+

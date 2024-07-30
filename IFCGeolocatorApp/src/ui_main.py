@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QTabWidget, QLabel, QFrame, QGroupBox
-from PyQt5.QtWebEngineWidgets import QWebEngineView
+from PyQt5.QtWebEngineWidgets import QWebEngineView 
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -16,7 +16,6 @@ class MainWindow(QMainWindow):
         self.main_layout = QVBoxLayout(self.central_widget)
         self.central_widget.setLayout(self.main_layout)
 
-
         # Tab Widget for IFC Files
         self.tab_widget = QTabWidget(self.central_widget)
         self.tab_widget.setFixedHeight(30)
@@ -25,7 +24,6 @@ class MainWindow(QMainWindow):
 
         # Map Viewer
         self.map_viewer = QWebEngineView(self.central_widget)
-        
 
         # Information Panel - Site and Map Conversion Cards
         self.info_panel = QFrame(self.central_widget)
