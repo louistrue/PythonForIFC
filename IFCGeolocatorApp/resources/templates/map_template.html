@@ -65,7 +65,8 @@
       window.addMarker = function (lat, lng, label) {
         console.log("Adding marker at:", lat, lng, "with label:", label);
         var marker = L.marker([lat, lng]).addTo(map);
-        marker.bindPopup(label);
+        marker.bindPopup(label + "<br>WGS84: [" + lat + ", " + lng + "]");
+        return marker;
       };
 
       window.clearMarkers = function () {

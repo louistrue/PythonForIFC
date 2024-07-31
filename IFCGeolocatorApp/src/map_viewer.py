@@ -101,10 +101,6 @@ class MapViewer(QWebEngineView):
         print(f"Applying map conversion: eastings={eastings}, northings={northings}, rotation={rotation_degrees}, scale={scale}, epsg_code={epsg_code}, transformation_code={transformation_code}")
 
         try:
-            # Fetch the origin offset for the given EPSG code and transformation code
-            origin_lat, origin_long = self.fetch_origin_offset(epsg_code, transformation_code)
-            print(f"Origin offset for EPSG:{epsg_code} using transformation {transformation_code}: lat={origin_lat}, long={origin_long}")
-
             # Use EPSG code to transform coordinates from EPSG to WGS84
             crs_src = CRS.from_epsg(epsg_code)
             crs_dst = CRS.from_epsg(4326)
@@ -124,8 +120,9 @@ class MapViewer(QWebEngineView):
 
             self.addMarker(wgs84_lat, final_long, "Converted Coordinates")
 
-            # Marker for the origin coordinates
-            self.addMarker(origin_lat, origin_long, "MapConversion Origin")
+            # Use the origin coordinates in the local EPSG system directly for marker
+            origin_lat, origin_long = self.fetch_origin_offset(epsg_code, transformation_code)
+            self.addMarker(origin_lat, origin_long, "Projected CRS: Origin")
 
             if largest_coords:
                 try:
@@ -140,6 +137,7 @@ class MapViewer(QWebEngineView):
 
         except Exception as e:
             print(f"Error applying map conversion: {e}")
+
 
     def setView(self, latitude, longitude, zoom):
         print(f"Setting view to lat: {latitude}, long: {longitude}, zoom: {zoom}")
