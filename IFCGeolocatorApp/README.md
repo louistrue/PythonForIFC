@@ -6,7 +6,7 @@ IFC Geolocator is a PyQt5-based application that provides geolocation and map vi
 
 - **Load and Visualize IFC Files**: Load multiple IFC files and display project details and geolocation data.
 - **Interactive Map**: Visualize site locations and map conversion coordinates on an interactive map.
-- **Export Capabilities**: Export geolocation data and map visualizations to PDF.
+- **Export Capabilities**: Export geolocation data and map visualizations to PDF might get added in future.
 - **Modern UI**: Clean and modern user interface built with PyQt5.
 
 ## Table of Contents
@@ -87,11 +87,9 @@ IFCGeolocatorApp/
 │   ├── ifc_handler.py        # Handling IFC file operations
 │   ├── map_viewer.py         # Integration with QWebEngineView and Leaflet.js
 │   ├── resources.qrc         # Resource file for images and icons
-│   └── resources_rc.py       # Compiled resources
 │
 ├── resources/
 │   ├── icons/                # Icons for UI elements
-│   ├── stylesheets/          # Stylesheets for UI styling
 │   └── templates/            # HTML templates for map display
 │       └── map_template.html # HTML template with Leaflet.js
 │
