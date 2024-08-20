@@ -140,3 +140,5 @@ uploads/
 
 venv/
 ecosystem.config.js
+IFCGeolocatorApp/src/__pycache__/map_viewer.cpython-310.pyc
+IFCGeolocatorApp/src/__pycache__/ui_main.cpython-310.pyc
