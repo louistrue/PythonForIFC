@@ -3,8 +3,9 @@ import bpy
 import os
 
 # Define your directories
-ifc_directory = "\Ifc"
-output_directory = "\Ifc - PICS"
+ifc_directory = r"\Ifc"
+defect_png_directory = r"\Ifc - Defect PICS"
+output_directory = r"\Ifc - BLENDS"
 log_file_path = os.path.join(output_directory, "render_log.txt")
 
 # Set up the camera for a top-down view
@@ -73,14 +74,6 @@ def enable_freestyle():
     line_set.select_crease = False
     line_set.select_edge_mark = False
     line_set.select_material_boundary = False
-    
-# Render the view to a PNG file
-def render_to_png(output_filepath):
-    bpy.context.scene.render.resolution_x = 1024
-    bpy.context.scene.render.resolution_y = 1024
-    bpy.context.scene.render.image_settings.file_format = 'PNG'
-    bpy.context.scene.render.filepath = output_filepath
-    bpy.ops.render.render(write_still=True)
 
 # Extract vertices from IfcIndexedPolyCurve
 def extract_vertices_from_indexed_polycurve(curve):
@@ -89,12 +82,12 @@ def extract_vertices_from_indexed_polycurve(curve):
     return verts
 
 # Extract and visualize the first profile geometry in Blender
-def visualize_first_profile(ifc, output_dir, ifc_filename, log_file):
+def visualize_first_profile(ifc, ifc_filename, log_file):
     profiles = ifc.by_type('IfcArbitraryClosedProfileDef')
     
     if not profiles:
         log_file.write(f"No IfcArbitraryClosedProfileDef found in {ifc_filename}.\n")
-        return
+        return False
 
     try:
         # Use only the first profile found
@@ -108,7 +101,7 @@ def visualize_first_profile(ifc, output_dir, ifc_filename, log_file):
             verts = extract_vertices_from_indexed_polycurve(outer_curve)
         else:
             log_file.write(f"Unsupported outer curve type in {ifc_filename}: {outer_curve.is_a()}.\n")
-            return
+            return False
 
         if verts:
             # Create a new mesh and object in Blender
@@ -136,32 +129,37 @@ def visualize_first_profile(ifc, output_dir, ifc_filename, log_file):
             # Set up camera for top-down view
             setup_camera(obj)
             
-            # Render and save the image
-            output_filepath = os.path.join(output_dir, f"{ifc_filename}.png")
-            render_to_png(output_filepath)
-            print(f"Rendered image saved to: {output_filepath}")
-
-            # Cleanup: remove the object and camera
-            bpy.data.objects.remove(obj, do_unlink=True)
-            bpy.data.objects.remove(bpy.context.scene.camera, do_unlink=True)
+            return True
                 
         else:
             log_file.write(f"No vertices extracted for {ifc_filename}.\n")
+            return False
     
     except Exception as e:
         log_file.write(f"Error processing {ifc_filename}: {str(e)}\n")
+        return False
 
-# Main workflow to process all IFC files in the directory
+# Main workflow to process the defective PNG files and generate corresponding .blend files
 def main():
     with open(log_file_path, "w") as log_file:
-        for filename in os.listdir(ifc_directory):
-            if filename.endswith(".ifc"):
-                ifc_filepath = os.path.join(ifc_directory, filename)
-                ifc = ifcopenshell.open(ifc_filepath)
-                if ifc:
-                    # Use the IFC filename without extension for output filenames
-                    ifc_filename = os.path.splitext(filename)[0]
-                    visualize_first_profile(ifc, output_directory, ifc_filename, log_file)
+        for png_filename in os.listdir(defect_png_directory):
+            if png_filename.endswith(".png"):
+                ifc_filename = os.path.splitext(png_filename)[0] + ".ifc"
+                ifc_filepath = os.path.join(ifc_directory, ifc_filename)
+                
+                if os.path.exists(ifc_filepath):
+                    ifc = ifcopenshell.open(ifc_filepath)
+                    if ifc:
+                        # Load the IFC and prepare the .blend file
+                        if visualize_first_profile(ifc, ifc_filename, log_file):
+                            # Save the current Blender file as a .blend file
+                            blend_filepath = os.path.join(output_directory, f"{ifc_filename}.blend")
+                            bpy.ops.wm.save_as_mainfile(filepath=blend_filepath)
+                            print(f"Saved .blend file to: {blend_filepath}")
+                        else:
+                            print(f"Failed to process {ifc_filename}.")
+                else:
+                    log_file.write(f"IFC file not found for {png_filename}\n")
 
 # Run the script
 main()
