@@ -4,7 +4,7 @@ import os
 
 # Define your directories
 ifc_directory = r"\Ifc"
-output_directory = r"\Ifc - PICS"
+output_directory = r"\Ifc - PICS_10_5"
 log_file_path = os.path.join(output_directory, "render_log.txt")
 
 # Set up the camera for a top-down view
@@ -28,30 +28,37 @@ def setup_camera(obj):
 
 # Set up the material using an emission shader for flat coloring
 def setup_material_and_render_settings():
-    # Set background color to white
+    # Set background color to pure white
     bpy.context.scene.world.color = (1, 1, 1)
-
+    
     # Ensure the background is rendered as white
     world = bpy.context.scene.world
     world.use_nodes = True
     bg_node = world.node_tree.nodes['Background']
     bg_node.inputs['Color'].default_value = (1, 1, 1, 1)  # Pure white
 
+    # Set color management to standard
+    bpy.context.scene.view_settings.view_transform = 'Standard'
+    
+    # Optionally adjust exposure if needed
+    bpy.context.scene.view_settings.exposure = 0.0
+
     # Create an emission material for the profile with a vibrant wooden color
     material = bpy.data.materials.new(name="TimberMaterial")
     material.use_nodes = True
     bsdf = material.node_tree.nodes["Principled BSDF"]
     material.node_tree.nodes.remove(bsdf)
-
+    
     # Create an Emission shader
     emission = material.node_tree.nodes.new("ShaderNodeEmission")
-    emission.inputs['Color'].default_value = (0.76, 0.51, 0.25, 1)  # Vibrant wooden color
+    emission.inputs['Color'].default_value = (0.894, 0.808, 0.467, 1)  # Color corresponding to hex #e4ce77
     emission.inputs['Strength'].default_value = 1.0
 
     material_output = material.node_tree.nodes.get('Material Output')
     material.node_tree.links.new(emission.outputs['Emission'], material_output.inputs['Surface'])
 
     return material
+
 
 # Enable freestyle for outer black outlines only
 def enable_freestyle():
@@ -76,8 +83,8 @@ def enable_freestyle():
     
 # Render the view to a PNG file
 def render_to_png(output_filepath):
-    bpy.context.scene.render.resolution_x = 1024
-    bpy.context.scene.render.resolution_y = 1024
+    bpy.context.scene.render.resolution_x = 1000
+    bpy.context.scene.render.resolution_y = 500
     bpy.context.scene.render.image_settings.file_format = 'PNG'
     bpy.context.scene.render.filepath = output_filepath
     bpy.ops.render.render(write_still=True)
@@ -155,7 +162,7 @@ def visualize_first_profile(ifc, output_dir, ifc_filename, log_file):
 def main():
     with open(log_file_path, "w") as log_file:
         for filename in os.listdir(ifc_directory):
-            if filename.endswith(".ifc"):
+            if "FVO" in filename and filename.endswith(".ifc"):
                 ifc_filepath = os.path.join(ifc_directory, filename)
                 ifc = ifcopenshell.open(ifc_filepath)
                 if ifc:
