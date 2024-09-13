@@ -290,23 +290,26 @@ class IFCConnector(QMainWindow):
             self.element_tree.addTopLevelItem(item)
         self.element_tree.blockSignals(False)
 
+
     def get_material_layers(self, element):
         """
         Retrieves material layers for an element.
         """
         material_layers = []
-        associations = element.HasAssociations
+        associations = getattr(element, 'HasAssociations', None)
         if associations:
             for association in associations:
                 if association.is_a("IfcRelAssociatesMaterial"):
                     material = association.RelatingMaterial
-                    if material and material.is_a("IfcMaterialLayerSetUsage"):
-                        material_layer_set = material.ForLayerSet
-                        if material_layer_set and material_layer_set.is_a("IfcMaterialLayerSet"):
-                            material_layers.extend(material_layer_set.MaterialLayers)
-                    elif material and material.is_a("IfcMaterialLayerSet"):
-                        material_layers.extend(material.MaterialLayers)
+                    if material:
+                        if material.is_a("IfcMaterialLayerSetUsage"):
+                            material_layer_set = material.ForLayerSet
+                            if material_layer_set and material_layer_set.is_a("IfcMaterialLayerSet"):
+                                material_layers.extend(material_layer_set.MaterialLayers)
+                        elif material.is_a("IfcMaterialLayerSet"):
+                            material_layers.extend(material.MaterialLayers)
         return material_layers
+
 
     def filter_elements(self, text):
         """
