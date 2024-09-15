@@ -1,5 +1,5 @@
 import ifcopenshell
-from ifcopenshell.geom
+from ifcopenshell import geom
 import math
 
 # Function to create a basic shape and apply transformations
